@@ -1,0 +1,275 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [
+  "setuptools>=42", # At least v42 of setuptools required.
+  "versioningit",
+]
+
+[project]
+name = "data-x"
+description = "Data decoding, encoding, conversion, and translation utilities."
+readme = "README.md"
+keywords = [
+  "airrohr",
+  "conversion",
+  "convert",
+  "data",
+  "decode",
+  "deserialize",
+  "encode",
+  "i/o",
+  "json",
+  "map data",
+  "marshall",
+  "nested data",
+  "serialize",
+  "sql",
+  "tasmota",
+  "tool",
+  "transcode",
+  "transform",
+  "translate",
+  "ttn",
+  "tts",
+  "unmarshall",
+  "unserialize",
+  "utility",
+]
+license = { text = "MIT" }
+authors = [
+  { name = "Andreas Motl", email = "andreas.motl@panodata.org" },
+]
+requires-python = ">=3.7"
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Plugins",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Education",
+  "Intended Audience :: Information Technology",
+  "Intended Audience :: Manufacturing",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: System Administrators",
+  "Intended Audience :: Telecommunications Industry",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: Unix",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+  "Programming Language :: SQL",
+  "Topic :: Adaptive Technologies",
+  "Topic :: Communications",
+  "Topic :: Database",
+  "Topic :: Documentation",
+  "Topic :: Education",
+  "Topic :: Internet",
+  "Topic :: Office/Business",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Scientific/Engineering :: Information Analysis",
+  "Topic :: Scientific/Engineering :: Interface Engine/Protocol Translator",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: Software Development :: Pre-processors",
+  "Topic :: Software Development :: Testing",
+  "Topic :: Software Development :: Version Control",
+  "Topic :: System :: Archiving",
+  "Topic :: System :: Benchmark",
+  "Topic :: System :: Clustering",
+  "Topic :: System :: Distributed Computing",
+  "Topic :: System :: Logging",
+  "Topic :: System :: Monitoring",
+  "Topic :: System :: Networking",
+  "Topic :: System :: Systems Administration",
+  "Topic :: Text Processing",
+  "Topic :: Utilities",
+]
+dynamic = [
+  "version",
+]
+dependencies = [
+  "simplejson<4",
+  "toolz<0.13",
+]
+optional-dependencies.develop = [
+  "mypy<1.11",
+  "poethepoet<0.27",
+  "pyproject-fmt<2.2",
+  "ruff<0.5",
+  "validate-pyproject<0.19",
+]
+optional-dependencies.release = [
+  "build<2",
+  "twine<6",
+]
+optional-dependencies.test = [
+  "pytest<9",
+  "pytest-cov<6",
+  "pytest-mock<4",
+]
+urls.changelog = "https://github.com/daq-tools/data-x/blob/main/CHANGES.md"
+urls.repository = "https://github.com/daq-tools/data-x"
+
+[tool.black]
+line-length = 120
+
+[tool.ruff]
+line-length = 120
+
+extend-exclude = [
+]
+
+lint.select = [
+  # Builtins
+  "A",
+  # Bugbear
+  "B",
+  # comprehensions
+  "C4",
+  # Pycodestyle
+  "E",
+  # eradicate
+  "ERA",
+  # Pyflakes
+  "F",
+  # isort
+  "I",
+  # pandas-vet
+  "PD",
+  # return
+  "RET",
+  # Bandit
+  "S",
+  # print
+  "T20",
+  "W",
+  # flake8-2020
+  "YTT",
+]
+
+lint.extend-ignore = [
+  # zip() without an explicit strict= parameter
+  "B905",
+  # df is a bad variable name. Be kinder to your future self.
+  "PD901",
+  # Unnecessary variable assignment before `return` statement
+  "RET504",
+  # Unnecessary `elif` after `return` statement
+  "RET505",
+  # Probable insecure usage of temporary file or directory
+  "S108",
+]
+
+lint.per-file-ignores."examples/*" = [
+  "T201",
+] # Allow `print`
+
+# ===================
+# Tasks configuration
+# ===================
+lint.per-file-ignores."tests/*" = [
+  "S101", # Allow use of `assert`, and `print`.
+]
+
+[tool.pytest.ini_options]
+addopts = """
+  -rfEXs -p pytester --strict-markers --verbosity=3
+  --cov --cov-report=term-missing --cov-report=xml
+  """
+minversion = "2.0"
+log_level = "DEBUG"
+log_cli_level = "DEBUG"
+log_format = "%(asctime)-15s [%(name)-36s] %(levelname)-8s: %(message)s"
+pythonpath = [
+  "src",
+]
+testpaths = [
+  "examples",
+  "data_x",
+  "tests",
+]
+python_files = [
+  "test_*.py",
+  "*_test.py",
+]
+xfail_strict = true
+markers = [
+  "tasmota",
+  "wemos",
+]
+
+[tool.coverage.paths]
+source = [
+  "src/",
+]
+
+[tool.coverage.run]
+branch = false
+omit = [
+  "tests/*",
+]
+
+[tool.coverage.report]
+fail_under = 0
+show_missing = true
+exclude_lines = [
+  "# pragma: no cover",
+  "raise NotImplemented",
+]
+
+[tool.mypy]
+mypy_path = "src"
+packages = [ "data_x" ]
+exclude = [
+]
+check_untyped_defs = true
+explicit_package_bases = true
+ignore_missing_imports = true
+implicit_optional = true
+install_types = true
+namespace_packages = true
+non_interactive = true
+# Needed until `mypy-0.990` for `ConverterDefinition` in `converter.py`.
+# https://github.com/python/mypy/issues/731#issuecomment-1260976955
+# enable_recursive_aliases = true
+
+[tool.versioningit.vcs]
+method = "git"
+default-tag = "0.0.0"
+
+[tool.poe.tasks]
+
+check = [
+  "lint",
+  "test",
+]
+
+format = [
+  { cmd = "ruff format ." },
+  # Configure Ruff not to auto-fix (remove!):
+  # unused imports (F401), unused variables (F841), `print` statements (T201), and commented-out code (ERA001).
+  { cmd = "ruff check --fix --ignore=ERA --ignore=F401 --ignore=F841 --ignore=T20 --ignore=ERA001 ." },
+  { cmd = "pyproject-fmt --keep-full-version pyproject.toml" },
+]
+
+lint = [
+  { cmd = "ruff format --check ." },
+  { cmd = "ruff check ." },
+  { cmd = "validate-pyproject pyproject.toml" },
+  { cmd = "mypy" },
+]
+
+release = [
+  { cmd = "python -m build" },
+  { cmd = "twine upload --skip-existing dist/*" },
+]
+
+test = [
+  { cmd = "pytest" },
+]

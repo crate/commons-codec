@@ -1,0 +1,9 @@
+/build
+/.coverage
+/coverage.xml
+/dist
+/.idea
+/.venv*
+*.DS_Store
+*.egg-info
+*.pyc
