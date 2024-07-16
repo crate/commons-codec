@@ -12,6 +12,11 @@
 ## About
 Data decoding, encoding, conversion, and translation utilities.
 
+## Details
+A collection of reusable utilities with minimal dependencies for transcoding
+purposes, mostly collected from other projects like [Kotori] and [LorryStream],
+in order to provide them per standalone package.
+
 ## Installation
 The package is available from [PyPI] at [data-x]. 
 To install the most recent version, run:
@@ -26,4 +31,6 @@ We appreciate contributions of any kind.
 
 
 [data-x]: https://pypi.org/project/data-x/
+[Kotori]: https://github.com/daq-tools/kotori
+[LorryStream]: https://github.com/daq-tools/lorrystream/
 [PyPI]: https://pypi.org/
