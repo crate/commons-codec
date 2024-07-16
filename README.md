@@ -24,6 +24,12 @@ To install the most recent version, run:
 pip install --upgrade data-x
 ```
 
+## License
+The project uses the LGPLv3 license for the whole ensemble. However, individual
+portions of the code base are vendorized from other Python packages, where
+deviating licenses may apply. Please check for detailed license information
+within the header sections of relevant files.
+
 ## Contributing
 The `data-x` package is an open source project, and is
 [managed on GitHub](https://github.com/daq-tools/data-x).
