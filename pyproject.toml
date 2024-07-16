@@ -11,16 +11,20 @@ description = "Data decoding, encoding, conversion, and translation utilities."
 readme = "README.md"
 keywords = [
   "airrohr",
+  "bson",
+  "cdc",
   "conversion",
   "convert",
   "data",
   "decode",
   "deserialize",
+  "dynamodb",
   "encode",
   "i/o",
   "json",
   "map data",
   "marshall",
+  "mongodb",
   "nested data",
   "serialize",
   "sql",
@@ -105,6 +109,9 @@ optional-dependencies.develop = [
   "ruff<0.6",
   "validate-pyproject<0.19",
 ]
+optional-dependencies.mongodb = [
+  "pymongo<4.9",
+]
 optional-dependencies.release = [
   "build<2",
   "twine<6",
@@ -168,8 +175,9 @@ lint.extend-ignore = [
 ]
 
 lint.per-file-ignores."examples/*" = [
-  "T201",
-] # Allow `print`
+  "ERA001", # Found commented-out code
+  "T201",   # Allow `print`
+]
 
 # ===================
 # Tasks configuration

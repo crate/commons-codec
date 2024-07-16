@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Added transformer for MongoDB CDC to CrateDB SQL conversion
 
 ## 2024/07/16 v0.0.1
 - Added decoders for Airrohr, Tasmota, and TTS/TTN from Kotori DAQ

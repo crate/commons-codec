@@ -32,6 +32,10 @@ To install the most recent version, run:
 pip install --upgrade commons-codec
 ```
 
+## Usage
+In order to learn how to use the library, please visit the [documentation],
+and explore the source code or its [examples].
+
 ## License
 The project uses the LGPLv3 license for the whole ensemble. However, individual
 portions of the code base are vendorized from other Python packages, where
@@ -50,6 +54,8 @@ both libraries' ingredients don't have anything in common, yet.
 
 [Apache Commons Codec]: https://commons.apache.org/proper/commons-codec/
 [commons-codec]: https://pypi.org/project/commons-codec/
+[documentation]: https://github.com/daq-tools/commons-codec/tree/main/docs
+[examples]: https://github.com/daq-tools/commons-codec/tree/main/examples
 [Kotori]: https://github.com/daq-tools/kotori
 [LorryStream]: https://github.com/daq-tools/lorrystream/
 [PyPI]: https://pypi.org/
