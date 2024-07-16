@@ -21,9 +21,9 @@ References
 
 import logging
 
-from data_x.decode.tts_ttn import TheThingsStackDecoder
-from data_x.util.data import jd
-from data_x.util.io import read_jsonfile
+from commons_codec.decode.tts_ttn import TheThingsStackDecoder
+from commons_codec.util.data import jd
+from commons_codec.util.io import read_jsonfile
 
 logger = logging.getLogger(__name__)
 

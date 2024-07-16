@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from data_x.util.data import is_number
+from commons_codec.util.data import is_number
 
 
 def test_is_number_numeric():

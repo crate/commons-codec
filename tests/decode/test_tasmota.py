@@ -3,8 +3,8 @@
 import logging
 
 import pytest
-from data_x.decode.tasmota import TasmotaSensorDecoder, TasmotaStateDecoder
-from data_x.util.data import jd
+from commons_codec.decode.tasmota import TasmotaSensorDecoder, TasmotaStateDecoder
+from commons_codec.util.data import jd
 
 logger = logging.getLogger(__name__)
 

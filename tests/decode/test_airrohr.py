@@ -3,8 +3,8 @@
 import logging
 import typing as t
 
-from data_x.decode.airrohr import AirrohrDecoder
-from data_x.util.data import jd
+from commons_codec.decode.airrohr import AirrohrDecoder
+from commons_codec.util.data import jd
 
 logger = logging.getLogger(__name__)
 

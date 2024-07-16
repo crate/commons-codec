@@ -6,7 +6,7 @@ requires = [
 ]
 
 [project]
-name = "data-x"
+name = "commons-codec"
 description = "Data decoding, encoding, conversion, and translation utilities."
 readme = "README.md"
 keywords = [
@@ -114,8 +114,8 @@ optional-dependencies.test = [
   "pytest-cov<6",
   "pytest-mock<4",
 ]
-urls.changelog = "https://github.com/daq-tools/data-x/blob/main/CHANGES.md"
-urls.repository = "https://github.com/daq-tools/data-x"
+urls.changelog = "https://github.com/daq-tools/commons-codec/blob/main/CHANGES.md"
+urls.repository = "https://github.com/daq-tools/commons-codec"
 
 [tool.black]
 line-length = 120
@@ -192,7 +192,7 @@ pythonpath = [
 ]
 testpaths = [
   "examples",
-  "data_x",
+  "commons_codec",
   "tests",
 ]
 python_files = [
@@ -226,7 +226,7 @@ exclude_lines = [
 
 [tool.mypy]
 mypy_path = "src"
-packages = [ "data_x" ]
+packages = [ "commons_codec" ]
 exclude = [
 ]
 check_untyped_defs = true

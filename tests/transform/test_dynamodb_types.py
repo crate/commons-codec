@@ -14,7 +14,7 @@ import unittest
 from decimal import Decimal
 
 import pytest
-from data_x.vendor.boto3.dynamodb.types import Binary, TypeDeserializer
+from commons_codec.vendor.boto3.dynamodb.types import Binary, TypeDeserializer
 
 
 class TestBinary(unittest.TestCase):

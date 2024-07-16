@@ -3,4 +3,4 @@
 import setuptools
 
 if __name__ == "__main__":
-    setuptools.setup(name="data-x")
+    setuptools.setup(name="commons-codec")

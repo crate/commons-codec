@@ -3,7 +3,7 @@
 import json
 from collections import OrderedDict
 
-from data_x.util.data import is_number
+from commons_codec.util.data import is_number
 
 
 class AirrohrDecoder:

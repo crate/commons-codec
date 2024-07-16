@@ -9,7 +9,7 @@ import typing as t
 import simplejson as json
 import toolz
 
-from data_x.vendor.boto3.dynamodb.types import TypeDeserializer
+from commons_codec.vendor.boto3.dynamodb.types import TypeDeserializer
 
 logger = logging.getLogger(__name__)
 
