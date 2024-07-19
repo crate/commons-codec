@@ -16,9 +16,7 @@ tasmota_state_topic = "mqttkit-1/itest/foo/bar/tele/STATE"
 @pytest.mark.tasmota
 def test_tasmota_sonoff_sc():
     """
-    Publish a single SENSOR reading in Tasmota/JSON format
-    to MQTT broker, including a timestamp.
-    Proof that the reading is processed and stored correctly.
+    Verify decoding a reading from a "Sonoff SC" device in Tasmota JSON format.
 
     https://kotori.readthedocs.io/en/latest/integration/tasmota.html#submit
     """
@@ -45,9 +43,7 @@ def test_tasmota_sonoff_sc():
 @pytest.mark.tasmota
 def test_tasmota_ds18b20():
     """
-    Publish another single SENSOR reading in Tasmota/JSON format
-    to MQTT broker, including a timestamp.
-    Proof that the reading is processed and stored correctly.
+    Verify decoding a reading from a "Wemos DS18B20" device in Tasmota JSON format.
 
     https://kotori.readthedocs.io/en/latest/integration/tasmota.html#submit
     """
@@ -68,8 +64,7 @@ def test_tasmota_ds18b20():
 @pytest.mark.wemos
 def test_tasmota_wemos_dht22():
     """
-    Publish a reading from a Wemos multi sensor device.
-    Proof that the reading is processed and stored correctly.
+    Verify decoding a reading from a "Wemos DHT22" device in Tasmota JSON format.
     """
 
     # Submit a single measurement.
@@ -89,8 +84,7 @@ def test_tasmota_wemos_dht22():
 @pytest.mark.wemos
 def test_tasmota_wemos_multi():
     """
-    Publish a reading from a Wemos multi sensor device.
-    Proof that the reading is processed and stored correctly.
+    Verify decoding a reading from a "Wemos multi sensor" device in Tasmota JSON format.
     """
 
     # Submit a single measurement.
@@ -121,9 +115,7 @@ def test_tasmota_wemos_multi():
 @pytest.mark.tasmota
 def test_tasmota_state():
     """
-    Publish a single STATE reading in Tasmota/JSON format
-    to MQTT broker, including a timestamp.
-    Proof that the reading is processed and stored correctly.
+    Verify decoding a "state message" in Tasmota JSON format.
 
     https://kotori.readthedocs.io/en/latest/integration/tasmota.html#submit
     """

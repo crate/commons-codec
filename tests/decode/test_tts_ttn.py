@@ -30,8 +30,9 @@ logger = logging.getLogger(__name__)
 
 def test_decode_tts_ttn_full(tts_ttn_full):
     """
-    Submit single reading in TTS/TTN webhook JSON format to HTTP API,
-    and verify it was correctly stored in the InfluxDB database.
+    Verify decoding a full message in TTS/TTN webhook JSON format.
+
+    https://kotori.readthedocs.io/en/latest/integration/tts-ttn.html
     """
 
     data_in = read_jsonfile(tts_ttn_full)
@@ -60,8 +61,9 @@ def test_decode_tts_ttn_full(tts_ttn_full):
 
 def test_decode_tts_ttn_minimal(tts_ttn_minimal):
     """
-    Submit single reading in TTS/TTN webhook JSON format to HTTP API,
-    and verify it was correctly stored in the InfluxDB database.
+    Verify decoding a minimal message in TTS/TTN webhook JSON format.
+
+    https://kotori.readthedocs.io/en/latest/integration/tts-ttn.html
     """
 
     data_in = read_jsonfile(tts_ttn_minimal)
