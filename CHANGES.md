@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## 2024/07/19 v0.0.2
 - Added transformer for MongoDB CDC to CrateDB SQL conversion
 - Rename "Airrohr" decoder to "Sensor.Community"
 
