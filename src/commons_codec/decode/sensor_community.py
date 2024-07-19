@@ -6,13 +6,16 @@ from collections import OrderedDict
 from commons_codec.util.data import is_number
 
 
-class AirrohrDecoder:
+class SensorCommunity:
     """
-    Decode JSON payloads in Airrohr format.
+    Decode JSON payloads in Sensor.Community format.
+
+    Previously / Also: Airrohr, dusti.api, Luftdaten.info
 
     Documentation
     =============
-    - https://getkotori.org/docs/integration/airrohr.html
+    - https://github.com/opendata-stuttgart/meta/wiki/APIs
+    - https://kotori.readthedocs.io/en/latest/integration/airrohr.html
     - https://community.hiveeyes.org/t/more-data-acquisition-payload-formats-for-kotori/1421/2
 
     Example

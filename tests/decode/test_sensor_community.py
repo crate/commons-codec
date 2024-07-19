@@ -1,15 +1,12 @@
-# -*- coding: utf-8 -*-
-# (c) 2020-2021 Andreas Motl <andreas@getkotori.org>
+# Copyright (c) 2020-2024, The Kotori Developers and contributors.
+# Distributed under the terms of the LGPLv3 license, see LICENSE.
 import logging
 import typing as t
 
-from commons_codec.decode.airrohr import AirrohrDecoder
+from commons_codec.decode.sensor_community import SensorCommunity
 from commons_codec.util.data import jd
 
 logger = logging.getLogger(__name__)
-
-
-# https://community.hiveeyes.org/t/more-data-acquisition-payload-formats-for-kotori/1421/2
 
 
 data_in = {
@@ -42,13 +39,12 @@ data_out = {
 }
 
 
-def test_decode_airrohr():
+def test_decode_sensor_community():
     """
-    Submit single reading in Airrohr JSON format to HTTP API
-    and proof it is stored in the InfluxDB database.
+    Verify decoding a single reading in Sensor.Community JSON format.
     """
 
-    result = AirrohrDecoder.decode(jd(data_in))
+    result = SensorCommunity.decode(jd(data_in))
     assert result == data_out
     assert_type(result["SDS_P1"], float)
     assert_type(result["BME280_pressure"], float)
@@ -59,6 +55,9 @@ def test_decode_airrohr():
 
 
 def assert_type(value: t.Any, type_: t.Type):
+    """
+    Assertion helper with better error reporting.
+    """
     assert isinstance(
         value, type_
     ), f"Value is of type '{type(value).__name__}', but should be '{type_.__name__}' instead"
