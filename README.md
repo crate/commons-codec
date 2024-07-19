@@ -55,7 +55,7 @@ both libraries' ingredients don't have anything in common, yet.
 
 ### License
 The project uses the LGPLv3 license for the whole ensemble. However, individual
-portions of the code base are vendorized from other Python packages, where
+portions of the code base are vendored from other Python packages, where
 deviating licenses may apply. Please check for detailed license information
 within the header sections of relevant files.
 
