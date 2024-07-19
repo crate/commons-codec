@@ -36,20 +36,29 @@ pip install --upgrade commons-codec
 In order to learn how to use the library, please visit the [documentation],
 and explore the source code or its [examples].
 
-## License
+
+## Project Information
+
+### Acknowledgements
+Kudos to the authors of all the many software components this library is
+vendoring and building upon.
+
+### Contributing
+The `commons-codec` package is an open source project, and is
+[managed on GitHub](https://github.com/daq-tools/commons-codec).
+The project is still in its infancy, and we appreciate contributions
+of any kind.
+
+### Etymology
+The [Apache Commons Codec] library was the inspiration for the name. Otherwise,
+both libraries' ingredients don't have anything in common, yet.
+
+### License
 The project uses the LGPLv3 license for the whole ensemble. However, individual
 portions of the code base are vendorized from other Python packages, where
 deviating licenses may apply. Please check for detailed license information
 within the header sections of relevant files.
 
-## Contributing
-The `commons-codec` package is an open source project, and is
-[managed on GitHub](https://github.com/daq-tools/commons-codec).
-We appreciate contributions of any kind.
-
-## Etymology
-The [Apache Commons Codec] library was the inspiration for the name. Otherwise,
-both libraries' ingredients don't have anything in common, yet.
 
 
 [Apache Commons Codec]: https://commons.apache.org/proper/commons-codec/
