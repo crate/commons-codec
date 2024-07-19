@@ -123,8 +123,12 @@ optional-dependencies.test = [
   "pytest-cov<6",
   "pytest-mock<4",
 ]
-urls.changelog = "https://github.com/daq-tools/commons-codec/blob/main/CHANGES.md"
-urls.repository = "https://github.com/daq-tools/commons-codec"
+
+urls.Changelog = "https://github.com/daq-tools/commons-codec/blob/main/CHANGES.md"
+urls.Documentation = "https://github.com/daq-tools/commons-codec/tree/main/docs"
+urls.Homepage = "https://github.com/daq-tools/commons-codec"
+urls.Issues = "https://github.com/daq-tools/commons-codec/issues"
+urls.Repository = "https://github.com/daq-tools/commons-codec"
 
 [tool.black]
 line-length = 120
