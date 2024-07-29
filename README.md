@@ -43,6 +43,9 @@ and explore the source code or its [examples].
 Kudos to the authors of all the many software components this library is
 vendoring and building upon.
 
+### Prior Art
+- [core-cdc] by Alejandro Cora González. Cheers!
+
 ### Contributing
 The `commons-codec` package is an open source project, and is
 [managed on GitHub](https://github.com/daq-tools/commons-codec).
@@ -63,6 +66,7 @@ within the header sections of relevant files.
 
 [Apache Commons Codec]: https://commons.apache.org/proper/commons-codec/
 [commons-codec]: https://pypi.org/project/commons-codec/
+[core-cdc]: https://pypi.org/project/core-cdc/
 [documentation]: https://github.com/daq-tools/commons-codec/tree/main/docs
 [examples]: https://github.com/daq-tools/commons-codec/tree/main/examples
 [Kotori]: https://github.com/daq-tools/kotori
