@@ -2,6 +2,7 @@
 
 ## Unreleased
 - Added transformer for AWS DMS to CrateDB SQL
+- Dropped support for Python 3.7
 
 ## 2024/07/19 v0.0.2
 - Added transformer for MongoDB CDC to CrateDB SQL conversion
