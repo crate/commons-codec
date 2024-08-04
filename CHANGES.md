@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## 2024/08/05 v0.0.3
 - Added transformer for AWS DMS to CrateDB SQL
 - Dropped support for Python 3.7
 
