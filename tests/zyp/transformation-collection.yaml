@@ -1,0 +1,22 @@
+meta:
+  version: 1
+  type: zyp-collection
+pre:
+  rules:
+  - expression: records[?not_null(meta.location) && !starts_with(meta.location, 'N')]
+    type: jmes
+bucket:
+  names:
+    rules:
+    - new: id
+      old: _id
+  values:
+    rules:
+    - pointer: /id
+      transformer: builtins.int
+    - pointer: /data/value
+      transformer: builtins.float
+post:
+  rules:
+  - expression: .[] |= (.data.value /= 100)
+    type: jq

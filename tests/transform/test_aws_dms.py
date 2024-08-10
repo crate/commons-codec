@@ -1,4 +1,5 @@
 # ruff: noqa: S608 FIXME: Possible SQL injection vector through string-based query construction
+import base64
 import json
 
 import pytest
@@ -276,3 +277,7 @@ def test_decode_cdc_delete_failure(cdc):
     with pytest.raises(ValueError) as ex:
         DMSTranslatorCrateDB().to_sql(MSG_DATA_DELETE)
     assert ex.match("Unable to invoke DML operation without primary key information")
+
+
+if __name__ == "__main__":
+    print(base64.b64encode(json.dumps(MSG_DATA_INSERT).encode("utf-8")))  # noqa: T201

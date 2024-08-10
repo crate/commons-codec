@@ -1,0 +1,30 @@
+{
+  "meta": {
+    "version": 1,
+    "type": "zyp-bucket"
+  },
+  "schema": {
+    "rules": [
+      {
+        "pointer": "/meta/date",
+        "type": "DATETIME"
+      }
+    ]
+  },
+  "names": {
+    "rules": [
+      {
+        "old": "_id",
+        "new": "id"
+      }
+    ]
+  },
+  "values": {
+    "rules": [
+      {
+        "pointer": "/meta/date",
+        "transformer": "to_unixtime"
+      }
+    ]
+  }
+}

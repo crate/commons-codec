@@ -10,7 +10,6 @@
 [![License](https://img.shields.io/pypi/l/commons-codec.svg)](https://pypi.org/project/commons-codec/)
 
 ## About
-Data decoding, encoding, conversion, and translation utilities.
 
 > A codec is a device or computer program that encodes or decodes a data stream or signal.
 > Codec is a portmanteau of coder/decoder.
@@ -21,18 +20,23 @@ Data decoding, encoding, conversion, and translation utilities.
 > -- https://en.wikipedia.org/wiki/Codec
 
 ## What's Inside
-- **Decoders:** A collection of reusable utilities with minimal dependencies for
-  transcoding purposes, mostly collected from other projects like
+- [Change Data Capture (CDC)]: **Transformer components** for converging CDC event messages to
+  SQL statements.
+
+- A collection of reusable utilities with minimal dependencies for
+  **decoding and transcoding** purposes, mostly collected from other projects like
   [Kotori](https://kotori.readthedocs.io/) and [LorryStream](https://lorrystream.readthedocs.io/),
   in order to provide them per standalone package for broader use cases.
 
-- Transformers for [Change Data Capture (CDC)] messages to SQL statements.
+- [Zyp], a generic and compact **transformation engine** written in Python, for data
+  decoding, encoding, conversion, translation, transformation, and cleansing purposes,
+  to be used as a pipeline element for data pre- and/or post-processing.
 
 ## Installation
 The package is available from [PyPI] at [commons-codec].
-To install the most recent version, run:
+To install the most recent version, including support for MongoDB, and Zyp, run:
 ```shell
-pip install --upgrade commons-codec
+pip install --upgrade 'commons-codec[mongodb,zyp]'
 ```
 
 ## Usage
@@ -47,7 +51,7 @@ Kudos to the authors of all the many software components this library is
 vendoring and building upon.
 
 ### Similar Projects
-See [prior art].
+See [prior art] and [Zyp research].
 
 ### Contributing
 The `commons-codec` package is an open source project, and is
@@ -69,8 +73,10 @@ within the header sections of relevant files.
 [Apache Commons Codec]: https://commons.apache.org/proper/commons-codec/
 [Change Data Capture (CDC)]: https://en.wikipedia.org/wiki/Change_data_capture
 [commons-codec]: https://pypi.org/project/commons-codec/
+[Zyp research]: https://commons-codec.readthedocs.io/zyp/research.html
 [documentation]: https://commons-codec.readthedocs.io/
 [examples]: https://github.com/daq-tools/commons-codec/tree/main/examples
 [managed on GitHub]: https://github.com/daq-tools/commons-codec
 [prior art]: https://commons-codec.readthedocs.io/prior-art.html
 [PyPI]: https://pypi.org/
+[Zyp]: https://commons-codec.readthedocs.io/zyp/

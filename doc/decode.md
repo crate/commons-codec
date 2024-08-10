@@ -1,4 +1,4 @@
-# Various Decoders
+# Decoder Collection
 
 `commons-codec` includes telemetry data decoders for individual popular sensor
 appliances.
