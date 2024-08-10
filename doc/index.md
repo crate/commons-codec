@@ -23,7 +23,7 @@
 | [LorryStream]
 
 ```{include} readme.md
-:start-line: 12
+:start-line: 11
 ```
 
 
@@ -34,6 +34,7 @@
 
 cdc/index
 decode
+zyp/index
 ```
 
 ```{toctree}

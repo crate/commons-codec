@@ -21,10 +21,12 @@ keywords = [
   "dynamodb",
   "encode",
   "i/o",
+  "jmespath",
   "json",
+  "jsonpointer",
   "luftdaten.info",
   "map data",
-  "marshall",
+  "marshal",
   "mongodb",
   "nested data",
   "sensor.community",
@@ -35,11 +37,13 @@ keywords = [
   "transcode",
   "transform",
   "translate",
+  "transon",
   "ttn",
   "tts",
-  "unmarshall",
+  "unmarshal",
   "unserialize",
   "utility",
+  "zyp",
 ]
 license = { text = "LGPL 3, EUPL 1.2" }
 authors = [
@@ -102,8 +106,12 @@ dynamic = [
 dependencies = [
   "attrs<25",
   "backports-strenum<1.3; python_version<'3.11'",
+  "cattrs<24",
   "simplejson<4",
   "toolz<0.13",
+]
+optional-dependencies.all = [
+  "commons-codec[mongodb,zyp]",
 ]
 optional-dependencies.develop = [
   "mypy<1.12",
@@ -132,6 +140,14 @@ optional-dependencies.test = [
   "pytest<9",
   "pytest-cov<6",
   "pytest-mock<4",
+]
+optional-dependencies.zyp = [
+  "jmespath<1.1",
+  "jq<1.8",
+  "jsonpointer<4",
+  "python-dateutil<2.10",
+  "pyyaml<7",
+  "transon==0.0.7",
 ]
 
 urls.Changelog = "https://commons-codec.readthedocs.io/changes.html"
@@ -215,9 +231,10 @@ pythonpath = [
   "src",
 ]
 testpaths = [
-  "examples",
   "commons_codec",
+  "examples",
   "tests",
+  "zyp",
 ]
 python_files = [
   "test_*.py",
@@ -238,6 +255,7 @@ source = [
 branch = false
 omit = [
   "tests/*",
+  "src/zyp/util/dictx.py",
 ]
 
 [tool.coverage.report]
@@ -250,7 +268,10 @@ exclude_lines = [
 
 [tool.mypy]
 mypy_path = "src"
-packages = [ "commons_codec" ]
+packages = [
+  "commons_codec",
+  "zyp",
+]
 exclude = [
 ]
 check_untyped_defs = true
