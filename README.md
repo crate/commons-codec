@@ -20,10 +20,13 @@ Data decoding, encoding, conversion, and translation utilities.
 >
 > -- https://en.wikipedia.org/wiki/Codec
 
-## Details
-A collection of reusable utilities with minimal dependencies for transcoding
-purposes, mostly collected from other projects like [Kotori] and [LorryStream],
-in order to provide them per standalone package for broader use cases.
+## What's Inside
+- **Decoders:** A collection of reusable utilities with minimal dependencies for
+  transcoding purposes, mostly collected from other projects like
+  [Kotori](https://kotori.readthedocs.io/) and [LorryStream](https://lorrystream.readthedocs.io/),
+  in order to provide them per standalone package for broader use cases.
+
+- Transformers for [Change Data Capture (CDC)] messages to SQL statements.
 
 ## Installation
 The package is available from [PyPI] at [commons-codec].
@@ -43,14 +46,13 @@ and explore the source code or its [examples].
 Kudos to the authors of all the many software components this library is
 vendoring and building upon.
 
-### Prior Art
-- [core-cdc] by Alejandro Cora González. Cheers!
+### Similar Projects
+See [prior art].
 
 ### Contributing
 The `commons-codec` package is an open source project, and is
-[managed on GitHub](https://github.com/daq-tools/commons-codec).
-The project is still in its infancy, and we appreciate contributions
-of any kind.
+[managed on GitHub]. The project is still in its infancy, and
+we appreciate contributions of any kind.
 
 ### Etymology
 The [Apache Commons Codec] library was the inspiration for the name. Otherwise,
@@ -65,10 +67,10 @@ within the header sections of relevant files.
 
 
 [Apache Commons Codec]: https://commons.apache.org/proper/commons-codec/
+[Change Data Capture (CDC)]: https://en.wikipedia.org/wiki/Change_data_capture
 [commons-codec]: https://pypi.org/project/commons-codec/
-[core-cdc]: https://pypi.org/project/core-cdc/
-[documentation]: https://github.com/daq-tools/commons-codec/tree/main/docs
+[documentation]: https://commons-codec.readthedocs.io/
 [examples]: https://github.com/daq-tools/commons-codec/tree/main/examples
-[Kotori]: https://github.com/daq-tools/kotori
-[LorryStream]: https://github.com/daq-tools/lorrystream/
+[managed on GitHub]: https://github.com/daq-tools/commons-codec
+[prior art]: https://commons-codec.readthedocs.io/prior-art.html
 [PyPI]: https://pypi.org/
