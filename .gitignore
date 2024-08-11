@@ -1,6 +1,7 @@
 /build
 /.coverage
 /coverage.xml
+/doc/_build
 /dist
 /.idea
 /.venv*

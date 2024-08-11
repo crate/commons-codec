@@ -8,7 +8,7 @@
 - [x] Release v0.0.2
 
 ## Iteration +2
-- [ ] Performance: Batching!
+- [ ] Performance: Batching!?
 - [ ] MongoDB: Implement stream resumption using `start_after`
 - [ ] Feature: Filter by events, e.g. Ignore "delete" events?
 - [ ] Integration Testing the "example" programs?

@@ -112,6 +112,15 @@ optional-dependencies.develop = [
   "ruff<0.6",
   "validate-pyproject<0.19",
 ]
+optional-dependencies.doc = [
+  "furo==2024.1.29",               # Check visited link style on newer versions!
+  "myst-parser[linkify]>=0.18,<4",
+  "sphinx-autobuild==2021.3.14",   # Newer versions stopped "watching" appropriately?
+  "sphinx-copybutton",
+  "sphinx-design-elements<1",
+  "sphinxcontrib-mermaid<1",
+  "sphinxext-opengraph<1",
+]
 optional-dependencies.mongodb = [
   "pymongo<4.9",
 ]
@@ -125,9 +134,9 @@ optional-dependencies.test = [
   "pytest-mock<4",
 ]
 
-urls.Changelog = "https://github.com/daq-tools/commons-codec/blob/main/CHANGES.md"
-urls.Documentation = "https://github.com/daq-tools/commons-codec/tree/main/docs"
-urls.Homepage = "https://github.com/daq-tools/commons-codec"
+urls.Changelog = "https://commons-codec.readthedocs.io/changes.html"
+urls.Documentation = "https://commons-codec.readthedocs.io/"
+urls.Homepage = "https://commons-codec.readthedocs.io/"
 urls.Issues = "https://github.com/daq-tools/commons-codec/issues"
 urls.Repository = "https://github.com/daq-tools/commons-codec"
 
@@ -264,6 +273,16 @@ default-tag = "0.0.0"
 check = [
   "lint",
   "test",
+]
+
+doc-autobuild = [
+  { cmd = "sphinx-autobuild --open-browser --watch src doc doc/_build" },
+]
+doc-html = [
+  { cmd = "sphinx-build -W --keep-going doc doc/_build" },
+]
+doc-linkcheck = [
+  { cmd = "sphinx-build -W --keep-going -b linkcheck doc doc/_build" },
 ]
 
 format = [

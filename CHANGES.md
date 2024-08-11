@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Added documentation using Sphinx and Read the Docs
 
 ## 2024/08/05 v0.0.3
 - Added transformer for AWS DMS to CrateDB SQL
