@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## 2024/08/14 v0.0.4
 - Added `BucketTransformation`, a minimal transformation engine
   based on JSON Pointer (RFC 6901).
 - Added documentation using Sphinx and Read the Docs
