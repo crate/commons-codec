@@ -121,7 +121,7 @@ optional-dependencies.develop = [
   "validate-pyproject<0.19",
 ]
 optional-dependencies.doc = [
-  "furo==2024.1.29",               # Check visited link style on newer versions!
+  "furo==2024.8.6",               # Check visited link style on newer versions!
   "myst-parser[linkify]>=0.18,<5",
   "sphinx-autobuild==2021.3.14",   # Newer versions stopped "watching" appropriately?
   "sphinx-copybutton",
