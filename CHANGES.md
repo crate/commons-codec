@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- Changed `UPDATE` statements from DMS not to write the entire `data`
+  column. This allows defining primary keys on the sink table.
 
 ## 2024/08/16 v0.0.5
 - Changed `UPDATE` statements from DynamoDB not to write the entire `data`

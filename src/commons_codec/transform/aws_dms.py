@@ -79,9 +79,9 @@ class DMSTranslatorCrateDBRecord:
             sql = f"INSERT INTO {self.address.fqn} ({self.DATA_COLUMN}) VALUES ('{values_clause}');"
 
         elif self.operation == "update":
-            values_clause = self.record_to_values()
+            values_clause = self.record_to_update()
             where_clause = self.keys_to_where()
-            sql = f"UPDATE {self.address.fqn} SET {self.DATA_COLUMN} = '{values_clause}' WHERE {where_clause};"
+            sql = f"UPDATE {self.address.fqn} SET {values_clause} WHERE {where_clause};"
 
         elif self.operation == "delete":
             where_clause = self.keys_to_where()
@@ -93,6 +93,28 @@ class DMSTranslatorCrateDBRecord:
             raise UnknownOperationError(message, operation=self.operation, record=self.record)
 
         return sql
+
+    def record_to_update(self) -> str:
+        """
+        Serializes an image to a comma-separated list of column/values pairs
+        that can be used in the `SET` clause of an `UPDATE` statement.
+        Primary key columns are skipped, since they cannot be updated.
+
+        IN
+        {'age': 33, 'attributes': '{"foo": "bar"}', 'id': 42, 'name': 'John'}
+
+        OUT
+        data['age'] = '33', data['attributes'] = '{"foo": "bar"}', data['name'] = 'John'
+        """
+        constraints: t.List[str] = []
+        for column_name, column_value in self.record["data"].items():
+            # Skip primary key columns, they cannot be updated
+            if column_name in self.primary_keys:
+                continue
+
+            constraint = f"{self.DATA_COLUMN}['{column_name}'] = '{column_value}'"
+            constraints.append(constraint)
+        return ", ".join(constraints)
 
     def record_to_values(self) -> str:
         """
