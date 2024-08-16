@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## 2024/08/16 v0.0.6
 - Changed `UPDATE` statements from DMS not to write the entire `data`
   column. This allows defining primary keys on the sink table.
 
