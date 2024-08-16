@@ -237,7 +237,7 @@ def test_decode_cdc_update_success(cdc):
     # Emulate an UPDATE operation.
     assert (
         cdc.to_sql(MSG_DATA_UPDATE_VALUE) == 'UPDATE "public"."foo" '
-        f"SET data = '{json.dumps(RECORD_UPDATE)}' "
+        "SET data['age'] = '33', data['attributes'] = '{\"foo\": \"bar\"}', data['name'] = 'John' "
         "WHERE data['id'] = '42';"
     )
 
