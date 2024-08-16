@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## 2024/08/17 v0.0.7
 - DynamoDB: Fixed a syntax issue with `text` data type in `UPDATE` statements
 
 ## 2024/08/16 v0.0.6
