@@ -145,8 +145,7 @@ def test_decode_cdc_insert_nested():
 def test_decode_cdc_modify():
     assert (
         DynamoCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_MODIFY) == 'UPDATE "foo" '
-        'SET data = \'{"humidity": 84.84, "temperature": 55.66, '
-        '"device": "bar", "timestamp": "2024-07-12T01:17:42"}\' '
+        "SET data['humidity'] = 84.84, data['temperature'] = 55.66 "
         "WHERE data['device'] = 'foo' AND data['timestamp'] = '2024-07-12T01:17:42';"
     )
 
