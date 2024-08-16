@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- DynamoDB: Fixed a syntax issue with `text` data type in `UPDATE` statements
 
 ## 2024/08/16 v0.0.6
 - Changed `UPDATE` statements from DMS not to write the entire `data`

@@ -68,12 +68,14 @@ MSG_MODIFY = {
             "humidity": {"N": "84.84"},
             "temperature": {"N": "55.66"},
             "device": {"S": "bar"},
+            "location": {"S": "Sydney"},
             "timestamp": {"S": "2024-07-12T01:17:42"},
         },
         "OldImage": {
             "humidity": {"N": "84.84"},
             "temperature": {"N": "42.42"},
             "device": {"S": "foo"},
+            "location": {"S": "Sydney"},
             "timestamp": {"S": "2024-07-12T01:17:42"},
         },
         "SizeBytes": 161,
@@ -145,7 +147,7 @@ def test_decode_cdc_insert_nested():
 def test_decode_cdc_modify():
     assert (
         DynamoCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_MODIFY) == 'UPDATE "foo" '
-        "SET data['humidity'] = 84.84, data['temperature'] = 55.66 "
+        "SET data['humidity'] = '84.84', data['temperature'] = '55.66', data['location'] = 'Sydney' "
         "WHERE data['device'] = 'foo' AND data['timestamp'] = '2024-07-12T01:17:42';"
     )
 

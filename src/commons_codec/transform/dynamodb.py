@@ -139,14 +139,16 @@ class DynamoCDCTranslatorCrateDB(DynamoCDCTranslatorBase):
         {'humidity': {'N': '84.84'}, 'temperature': {'N': '55.66'}}
 
         OUT:
-        data['humidity] = 84.84, temperature = 55.66
+        data['humidity] = '84.84', temperature = '55.66'
         """
         values_clause = self.deserialize_item(keys)
 
         constraints: t.List[str] = []
         for key_name, key_value in values_clause.items():
-            constraint = f"{self.DATA_COLUMN}['{key_name}'] = {key_value}"
+            key_value = str(key_value).replace("'", "''")
+            constraint = f"{self.DATA_COLUMN}['{key_name}'] = '{key_value}'"
             constraints.append(constraint)
+
         return ", ".join(constraints)
 
     def keys_to_where(self, keys: t.Dict[str, t.Dict[str, str]]) -> str:
