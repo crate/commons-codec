@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Changed `UPDATE` statements from DynamoDB not to write the entire `data`
+  column. This allows defining primary keys on the sink table.
+
 ## 2024/08/14 v0.0.4
 - Added `BucketTransformation`, a minimal transformation engine
   based on JSON Pointer (RFC 6901).

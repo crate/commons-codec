@@ -92,9 +92,17 @@ class DynamoCDCTranslatorCrateDB(DynamoCDCTranslatorBase):
             sql = f"INSERT INTO {self.table_name} " f"({self.DATA_COLUMN}) " f"VALUES ('{values_clause}');"
 
         elif event_name == "MODIFY":
-            values_clause = self.image_to_values(record["dynamodb"]["NewImage"])
+            new_image_cleaned = record["dynamodb"]["NewImage"]
+            # Drop primary key columns to not update them.
+            # Primary key values should be identical (if chosen identical in DynamoDB and CrateDB),
+            # but CrateDB does not allow having themin an UPDATE's SET clause.
+            for key in record["dynamodb"]["Keys"]:
+                del new_image_cleaned[key]
+
+            values_clause = self.values_to_update(new_image_cleaned)
+
             where_clause = self.keys_to_where(record["dynamodb"]["Keys"])
-            sql = f"UPDATE {self.table_name} " f"SET {self.DATA_COLUMN} = '{values_clause}' " f"WHERE {where_clause};"
+            sql = f"UPDATE {self.table_name} " f"SET {values_clause} " f"WHERE {where_clause};"
 
         elif event_name == "REMOVE":
             where_clause = self.keys_to_where(record["dynamodb"]["Keys"])
@@ -121,6 +129,25 @@ class DynamoCDCTranslatorCrateDB(DynamoCDCTranslatorBase):
         {"humidity": 84.84, "temperature": 42.42, "device": "foo", "timestamp": "2024-07-12T01:17:42"}
         """
         return json.dumps(self.deserialize_item(image))
+
+    def values_to_update(self, keys: t.Dict[str, t.Dict[str, str]]) -> str:
+        """
+        Serializes an image to a comma-separated list of column/values pairs
+        that can be used in the `SET` clause of an `UPDATE` statement.
+
+        IN:
+        {'humidity': {'N': '84.84'}, 'temperature': {'N': '55.66'}}
+
+        OUT:
+        data['humidity] = 84.84, temperature = 55.66
+        """
+        values_clause = self.deserialize_item(keys)
+
+        constraints: t.List[str] = []
+        for key_name, key_value in values_clause.items():
+            constraint = f"{self.DATA_COLUMN}['{key_name}'] = {key_value}"
+            constraints.append(constraint)
+        return ", ".join(constraints)
 
     def keys_to_where(self, keys: t.Dict[str, t.Dict[str, str]]) -> str:
         """
