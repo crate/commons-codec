@@ -1,5 +1,6 @@
 import pytest
 from jsonpointer import JsonPointer, JsonPointerException
+
 from zyp.util.locator import swap_node
 
 

@@ -2,6 +2,7 @@ import datetime as dt
 
 import pytest
 from dateutil.parser import ParserError
+
 from zyp.function import to_datetime, to_unixtime
 
 stddate = dt.datetime(2023, 6, 30)

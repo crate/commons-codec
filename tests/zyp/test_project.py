@@ -1,6 +1,7 @@
 import sys
 
 import pytest
+
 from zyp.model.collection import CollectionAddress, CollectionTransformation
 from zyp.model.project import TransformationProject
 

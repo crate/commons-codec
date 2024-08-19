@@ -6,6 +6,7 @@ import pytest
 pytest.importorskip("pymongo")
 
 from bson import ObjectId, Timestamp
+
 from commons_codec.transform.mongodb import MongoDBCDCTranslatorCrateDB
 
 MSG_OPERATION_UNKNOWN = {
