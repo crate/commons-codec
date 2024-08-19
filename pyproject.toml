@@ -143,7 +143,7 @@ optional-dependencies.test = [
 ]
 optional-dependencies.zyp = [
   "jmespath<1.1",
-  "jq<1.8",
+  "jq<1.9",
   "jsonpointer<4",
   "python-dateutil<2.10",
   "pyyaml<7",
