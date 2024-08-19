@@ -13,6 +13,7 @@ import sys
 
 import pymongo
 import sqlalchemy as sa
+
 from commons_codec.transform.mongodb import MongoDBCDCTranslatorCrateDB
 
 

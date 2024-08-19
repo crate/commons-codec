@@ -3,6 +3,7 @@
 import logging
 
 import pytest
+
 from commons_codec.decode.tasmota import TasmotaSensorDecoder, TasmotaStateDecoder
 from commons_codec.util.data import jd
 

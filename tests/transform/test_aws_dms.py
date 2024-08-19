@@ -3,6 +3,7 @@ import base64
 import json
 
 import pytest
+
 from commons_codec.exception import MessageFormatError, UnknownOperationError
 from commons_codec.model import ColumnType, ColumnTypeMapStore, TableAddress
 from commons_codec.transform.aws_dms import DMSTranslatorCrateDB

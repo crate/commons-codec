@@ -1,4 +1,5 @@
 import pytest
+
 from commons_codec.model import ColumnType, ColumnTypeMapStore, TableAddress
 
 

@@ -6,6 +6,7 @@ from copy import deepcopy
 from pathlib import Path
 
 import pytest
+
 from zyp.model.base import SchemaDefinition
 from zyp.model.bucket import (
     BucketTransformation,

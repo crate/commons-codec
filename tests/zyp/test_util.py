@@ -3,6 +3,7 @@ import jq
 import jsonpointer
 import pytest
 import transon
+
 from zyp.util.expression import compile_expression
 from zyp.util.locator import to_pointer
 
