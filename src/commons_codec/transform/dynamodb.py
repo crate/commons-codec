@@ -1,8 +1,8 @@
 # Copyright (c) 2023-2024, The Kotori Developers and contributors.
 # Distributed under the terms of the LGPLv3 license, see LICENSE.
+import decimal
 
 # ruff: noqa: S608 FIXME: Possible SQL injection vector through string-based query construction
-
 import logging
 import typing as t
 
@@ -10,9 +10,32 @@ import simplejson as json
 import toolz
 
 from commons_codec.util.data import is_container, is_number
-from commons_codec.vendor.boto3.dynamodb.types import TypeDeserializer
+from commons_codec.vendor.boto3.dynamodb.types import DYNAMODB_CONTEXT, TypeDeserializer
 
 logger = logging.getLogger(__name__)
+
+
+# Inhibit Inexact Exceptions
+DYNAMODB_CONTEXT.traps[decimal.Inexact] = False
+# Inhibit Rounded Exceptions
+DYNAMODB_CONTEXT.traps[decimal.Rounded] = False
+
+
+class CrateDBTypeDeserializer(TypeDeserializer):
+    def _deserialize_n(self, value):
+        return float(super()._deserialize_n(value))
+
+    def _deserialize_b(self, value):
+        return value
+
+    def _deserialize_ns(self, value):
+        return list(super()._deserialize_ns(value))
+
+    def _deserialize_ss(self, value):
+        return list(super()._deserialize_ss(value))
+
+    def _deserialize_bs(self, value):
+        return list(super()._deserialize_bs(value))
 
 
 class DynamoCDCTranslatorBase:
@@ -21,7 +44,7 @@ class DynamoCDCTranslatorBase:
     """
 
     def __init__(self):
-        self.deserializer = TypeDeserializer()
+        self.deserializer = CrateDBTypeDeserializer()
 
     def deserialize_item(self, item: t.Dict[str, t.Dict[str, str]]) -> t.Dict[str, str]:
         """
