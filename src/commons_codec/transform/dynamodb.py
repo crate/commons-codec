@@ -9,6 +9,7 @@ import typing as t
 import simplejson as json
 import toolz
 
+from commons_codec.util.data import is_container, is_number
 from commons_codec.vendor.boto3.dynamodb.types import TypeDeserializer
 
 logger = logging.getLogger(__name__)
@@ -145,8 +146,9 @@ class DynamoCDCTranslatorCrateDB(DynamoCDCTranslatorBase):
 
         constraints: t.List[str] = []
         for key_name, key_value in values_clause.items():
-            key_value = str(key_value).replace("'", "''")
-            constraint = f"{self.DATA_COLUMN}['{key_name}'] = '{key_value}'"
+            if not is_container(key_value) and not is_number(key_value):
+                key_value = "'" + str(key_value).replace("'", "''") + "'"
+            constraint = f"{self.DATA_COLUMN}['{key_name}'] = {key_value}"
             constraints.append(constraint)
 
         return ", ".join(constraints)

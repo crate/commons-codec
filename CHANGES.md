@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- DynamoDB: Apply rough type evaluation and dispatching when computing
+  values for `UPDATE` statements
 
 ## 2024/08/17 v0.0.7
 - DynamoDB: Fixed a syntax issue with `text` data type in `UPDATE` statements

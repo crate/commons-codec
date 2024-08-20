@@ -55,7 +55,7 @@ MSG_INSERT_NESTED = {
     },
     "eventSource": "aws:dynamodb",
 }
-MSG_MODIFY = {
+MSG_MODIFY_BASIC = {
     "awsRegion": "us-east-1",
     "eventID": "24757579-ebfd-480a-956d-a1287d2ef707",
     "eventName": "MODIFY",
@@ -70,6 +70,35 @@ MSG_MODIFY = {
             "temperature": {"N": "55.66"},
             "device": {"S": "bar"},
             "location": {"S": "Sydney"},
+            "timestamp": {"S": "2024-07-12T01:17:42"},
+        },
+        "OldImage": {
+            "humidity": {"N": "84.84"},
+            "temperature": {"N": "42.42"},
+            "device": {"S": "foo"},
+            "location": {"S": "Sydney"},
+            "timestamp": {"S": "2024-07-12T01:17:42"},
+        },
+        "SizeBytes": 161,
+        "ApproximateCreationDateTimePrecision": "MICROSECOND",
+    },
+    "eventSource": "aws:dynamodb",
+}
+MSG_MODIFY_NESTED = {
+    "awsRegion": "us-east-1",
+    "eventID": "24757579-ebfd-480a-956d-a1287d2ef707",
+    "eventName": "MODIFY",
+    "userIdentity": None,
+    "recordFormat": "application/json",
+    "tableName": "foo",
+    "dynamodb": {
+        "ApproximateCreationDateTime": 1720742302233719,
+        "Keys": {"device": {"S": "foo"}, "timestamp": {"S": "2024-07-12T01:17:42"}},
+        "NewImage": {
+            "device": {"M": {"id": {"S": "bar"}, "serial": {"N": 12345}}},
+            "tags": {"L": [{"S": "foo"}, {"S": "bar"}]},
+            "empty_map": {"M": {}},
+            "empty_list": {"L": []},
             "timestamp": {"S": "2024-07-12T01:17:42"},
         },
         "OldImage": {
@@ -145,10 +174,18 @@ def test_decode_cdc_insert_nested():
     )
 
 
-def test_decode_cdc_modify():
+def test_decode_cdc_modify_basic():
     assert (
-        DynamoCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_MODIFY) == 'UPDATE "foo" '
-        "SET data['humidity'] = '84.84', data['temperature'] = '55.66', data['location'] = 'Sydney' "
+        DynamoCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_MODIFY_BASIC) == 'UPDATE "foo" '
+        "SET data['humidity'] = 84.84, data['temperature'] = 55.66, data['location'] = 'Sydney' "
+        "WHERE data['device'] = 'foo' AND data['timestamp'] = '2024-07-12T01:17:42';"
+    )
+
+
+def test_decode_cdc_modify_nested():
+    assert (
+        DynamoCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_MODIFY_NESTED) == 'UPDATE "foo" '
+        "SET data['tags'] = ['foo', 'bar'], data['empty_map'] = {}, data['empty_list'] = [] "
         "WHERE data['device'] = 'foo' AND data['timestamp'] = '2024-07-12T01:17:42';"
     )
 
