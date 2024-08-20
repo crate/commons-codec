@@ -30,3 +30,7 @@ def is_number(s):
         pass
 
     return False
+
+
+def is_container(value):
+    return isinstance(value, (dict, list, set))
