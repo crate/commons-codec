@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## 2024/08/20 v0.0.8
 - DynamoDB: Apply rough type evaluation and dispatching when computing
   values for `UPDATE` statements
 
