@@ -1,5 +1,3 @@
-import decimal
-
 import pytest
 
 from commons_codec.transform.dynamodb import DynamoCDCTranslatorCrateDB
@@ -29,6 +27,10 @@ MSG_INSERT_BASIC = {
             "temperature": {"N": "42.42"},
             "device": {"S": "foo"},
             "timestamp": {"S": "2024-07-12T01:17:42"},
+            "string_set": {"SS": ["location_1"]},
+            "number_set": {"NS": [1, 2, 3, 4]},
+            "binary_set": {"BS": ["U3Vubnk="]},
+            # "varied_list": {'L': [1, 0.23123, "Hello world"]}
         },
         "SizeBytes": 99,
         "ApproximateCreationDateTimePrecision": "MICROSECOND",
@@ -49,6 +51,9 @@ MSG_INSERT_NESTED = {
             "id": {"S": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266"},
             "data": {"M": {"temperature": {"N": "42.42"}, "humidity": {"N": "84.84"}}},
             "meta": {"M": {"timestamp": {"S": "2024-07-12T01:17:42"}, "device": {"S": "foo"}}},
+            "string_set": {"SS": ["location_1"]},
+            "number_set": {"NS": [1, 2, 3, 0.34]},
+            "binary_set": {"BS": ["U3Vubnk="]},
         },
         "SizeBytes": 156,
         "ApproximateCreationDateTimePrecision": "MICROSECOND",
@@ -71,6 +76,9 @@ MSG_MODIFY_BASIC = {
             "device": {"S": "bar"},
             "location": {"S": "Sydney"},
             "timestamp": {"S": "2024-07-12T01:17:42"},
+            "string_set": {"SS": ["location_1"]},
+            "number_set": {"NS": [1, 2, 3, 0.34]},
+            "binary_set": {"BS": ["U3Vubnk="]},
         },
         "OldImage": {
             "humidity": {"N": "84.84"},
@@ -100,6 +108,9 @@ MSG_MODIFY_NESTED = {
             "empty_map": {"M": {}},
             "empty_list": {"L": []},
             "timestamp": {"S": "2024-07-12T01:17:42"},
+            "string_set": {"SS": ["location_1"]},
+            "number_set": {"NS": [1, 2, 3, 0.34]},
+            "binary_set": {"BS": ["U3Vubnk="]},
         },
         "OldImage": {
             "humidity": {"N": "84.84"},
@@ -128,6 +139,9 @@ MSG_REMOVE = {
             "temperature": {"N": "55.66"},
             "device": {"S": "bar"},
             "timestamp": {"S": "2024-07-12T01:17:42"},
+            "string_set": {"SS": ["location_1"]},
+            "number_set": {"NS": [1, 2, 3, 0.34]},
+            "binary_set": {"BS": ["U3Vubnk="]},
         },
         "SizeBytes": 99,
         "ApproximateCreationDateTimePrecision": "MICROSECOND",
@@ -137,9 +151,7 @@ MSG_REMOVE = {
 
 
 def test_decode_ddb_deserialize_type():
-    assert DynamoCDCTranslatorCrateDB(table_name="foo").deserialize_item({"foo": {"N": "84.84"}}) == {
-        "foo": decimal.Decimal("84.84")
-    }
+    assert DynamoCDCTranslatorCrateDB(table_name="foo").deserialize_item({"foo": {"N": "84.84"}}) == {"foo": 84.84}
 
 
 def test_decode_cdc_sql_ddl():
@@ -161,7 +173,8 @@ def test_decode_cdc_unknown_event():
 def test_decode_cdc_insert_basic():
     assert (
         DynamoCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_INSERT_BASIC) == 'INSERT INTO "foo" (data) '
-        'VALUES (\'{"humidity": 84.84, "temperature": 42.42, "device": "foo", "timestamp": "2024-07-12T01:17:42"}\');'
+        'VALUES (\'{"humidity": 84.84, "temperature": 42.42, "device": "foo", "timestamp": "2024-07-12T01:17:42",'
+        ' "string_set": ["location_1"], "number_set": [1.0, 2.0, 3.0, 4.0], "binary_set": ["U3Vubnk="]}\');'
     )
 
 
@@ -170,23 +183,28 @@ def test_decode_cdc_insert_nested():
         DynamoCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_INSERT_NESTED)
         == 'INSERT INTO "foo" (data) VALUES (\'{"id": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266", '
         '"data": {"temperature": 42.42, "humidity": 84.84}, '
-        '"meta": {"timestamp": "2024-07-12T01:17:42", "device": "foo"}}\');'
+        '"meta": {"timestamp": "2024-07-12T01:17:42", "device": "foo"},'
+        ' "string_set": ["location_1"], "number_set": [0.34, 1.0, 2.0, 3.0],'
+        ' "binary_set": ["U3Vubnk="]}\');'
     )
 
 
 def test_decode_cdc_modify_basic():
     assert (
         DynamoCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_MODIFY_BASIC) == 'UPDATE "foo" '
-        "SET data['humidity'] = 84.84, data['temperature'] = 55.66, data['location'] = 'Sydney' "
-        "WHERE data['device'] = 'foo' AND data['timestamp'] = '2024-07-12T01:17:42';"
+        "SET data['humidity'] = 84.84, data['temperature'] = 55.66, data['location'] = 'Sydney', "
+        "data['string_set'] = ['location_1'], data['number_set'] = [0.34, 1.0, 2.0, 3.0],"
+        " data['binary_set'] = ['U3Vubnk=']"
+        " WHERE data['device'] = 'foo' AND data['timestamp'] = '2024-07-12T01:17:42';"
     )
 
 
 def test_decode_cdc_modify_nested():
     assert (
         DynamoCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_MODIFY_NESTED) == 'UPDATE "foo" '
-        "SET data['tags'] = ['foo', 'bar'], data['empty_map'] = {}, data['empty_list'] = [] "
-        "WHERE data['device'] = 'foo' AND data['timestamp'] = '2024-07-12T01:17:42';"
+        "SET data['tags'] = ['foo', 'bar'], data['empty_map'] = {}, data['empty_list'] = [],"
+        " data['string_set'] = ['location_1'], data['number_set'] = [0.34, 1.0, 2.0, 3.0],"
+        " data['binary_set'] = ['U3Vubnk='] WHERE data['device'] = 'foo' AND data['timestamp'] = '2024-07-12T01:17:42';"
     )
 
 

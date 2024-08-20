@@ -102,10 +102,10 @@ class TypeDeserializer:
 
         :returns: The pythonic value of the DynamoDB type.
         """
-
         if not value:
             raise TypeError("Value must be a nonempty dictionary whose key is a valid dynamodb type.")
         dynamodb_type = list(value.keys())[0]
+
         try:
             deserializer = getattr(self, f"_deserialize_{dynamodb_type}".lower())
         except AttributeError as ex:
@@ -119,22 +119,24 @@ class TypeDeserializer:
         return value
 
     def _deserialize_n(self, value):
-        return DYNAMODB_CONTEXT.create_decimal(value)
+        # //return DYNAMODB_CONTEXT.create_decimal(value)
+
+        return float(value)
 
     def _deserialize_s(self, value):
         return value
 
     def _deserialize_b(self, value):
-        return Binary(value)
+        return value
 
     def _deserialize_ns(self, value):
-        return set(map(self._deserialize_n, value))
+        return list(set(map(self._deserialize_n, value)))
 
     def _deserialize_ss(self, value):
-        return set(map(self._deserialize_s, value))
+        return list(set(map(self._deserialize_s, value)))
 
     def _deserialize_bs(self, value):
-        return set(map(self._deserialize_b, value))
+        return list(set(map(self._deserialize_b, value)))
 
     def _deserialize_l(self, value):
         return [self.deserialize(v) for v in value]

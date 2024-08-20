@@ -11,6 +11,7 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 import unittest
+from collections import Counter
 from decimal import Decimal
 
 import pytest
@@ -87,22 +88,22 @@ class TestDeserializer(unittest.TestCase):
         assert self.deserializer.deserialize({"B": b"\x00"}) == Binary(b"\x00")
 
     def test_deserialize_number_set(self):
-        assert self.deserializer.deserialize({"NS": ["1", "1.25"]}) == {
+        assert self.deserializer.deserialize({"NS": ["1", "1.25"]}) == [
             Decimal("1"),
             Decimal("1.25"),
-        }
+        ]
 
     def test_deserialize_string_set(self):
-        assert self.deserializer.deserialize({"SS": ["foo", "bar"]}) == {
-            "foo",
-            "bar",
-        }
+        # We us Counter because when the set is transformed into a list, it loses order.
+        assert Counter(self.deserializer.deserialize({"SS": ["foo", "bar"]})) == Counter(
+            [
+                "foo",
+                "bar",
+            ]
+        )
 
     def test_deserialize_binary_set(self):
-        assert self.deserializer.deserialize({"BS": [b"\x00", b"\x01"]}) == {
-            Binary(b"\x00"),
-            Binary(b"\x01"),
-        }
+        assert Counter(self.deserializer.deserialize({"BS": [b"\x00", b"\x01"]})) == Counter([b"\x00", b"\x01"])
 
     def test_deserialize_list(self):
         assert self.deserializer.deserialize({"L": [{"N": "1"}, {"S": "foo"}, {"L": [{"N": "1.25"}]}]}) == [
@@ -120,3 +121,23 @@ class TestDeserializer(unittest.TestCase):
                 }
             }
         ) == {"foo": "mystring", "bar": {"baz": Decimal("1")}}
+
+    def test_deserialize_list_objects(self):
+        assert self.deserializer.deserialize(
+            {
+                "L": [
+                    {
+                        "M": {
+                            "foo": {"S": "mystring"},
+                            "bar": {"M": {"baz": {"N": "1"}}},
+                        }
+                    },
+                    {
+                        "M": {
+                            "foo": {"S": "other string"},
+                            "bar": {"M": {"baz": {"N": "2"}}},
+                        }
+                    },
+                ]
+            }
+        )
