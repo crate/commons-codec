@@ -33,7 +33,6 @@ MSG_INSERT_BASIC = {
             "string_set": {"SS": ["location_1"]},
             "number_set": {"NS": [1, 2, 3, 4]},
             "binary_set": {"BS": ["U3Vubnk="]},
-            # "varied_list": {'L': [1, 0.23123, "Hello world"]}
         },
         "SizeBytes": 99,
         "ApproximateCreationDateTimePrecision": "MICROSECOND",
@@ -57,6 +56,12 @@ MSG_INSERT_NESTED = {
             "string_set": {"SS": ["location_1"]},
             "number_set": {"NS": [1, 2, 3, 0.34]},
             "binary_set": {"BS": ["U3Vubnk="]},
+            "somemap": {
+                "M": {
+                    "test": {"N": 1},
+                    "test2": {"N": 2},
+                }
+            },
         },
         "SizeBytes": 156,
         "ApproximateCreationDateTimePrecision": "MICROSECOND",
@@ -116,13 +121,19 @@ MSG_MODIFY_NESTED = {
             "string_set": {"SS": ["location_1"]},
             "number_set": {"NS": [1, 2, 3, 0.34]},
             "binary_set": {"BS": ["U3Vubnk="]},
+            "somemap": {
+                "M": {
+                    "test": {"N": 1},
+                    "test2": {"N": 2},
+                }
+            },
         },
         "OldImage": {
             "humidity": {"N": "84.84"},
             "temperature": {"N": "42.42"},
-            "device": {"S": "foo"},
             "location": {"S": "Sydney"},
             "timestamp": {"S": "2024-07-12T01:17:42"},
+            "device": {"M": {"id": {"S": "bar"}, "serial": {"N": 12345}}},
         },
         "SizeBytes": 161,
         "ApproximateCreationDateTimePrecision": "MICROSECOND",
@@ -147,6 +158,12 @@ MSG_REMOVE = {
             "string_set": {"SS": ["location_1"]},
             "number_set": {"NS": [1, 2, 3, 0.34]},
             "binary_set": {"BS": ["U3Vubnk="]},
+            "somemap": {
+                "M": {
+                    "test": {"N": 1},
+                    "test2": {"N": 2},
+                }
+            },
         },
         "SizeBytes": 99,
         "ApproximateCreationDateTimePrecision": "MICROSECOND",
@@ -190,7 +207,7 @@ def test_decode_cdc_insert_nested():
         '"data": {"temperature": 42.42, "humidity": 84.84}, '
         '"meta": {"timestamp": "2024-07-12T01:17:42", "device": "foo"},'
         ' "string_set": ["location_1"], "number_set": [0.34, 1.0, 2.0, 3.0],'
-        ' "binary_set": ["U3Vubnk="]}\');'
+        ' "binary_set": ["U3Vubnk="], "somemap": {"test": 1.0, "test2": 2.0}}\');'
     )
 
 
@@ -207,9 +224,10 @@ def test_decode_cdc_modify_basic():
 def test_decode_cdc_modify_nested():
     assert (
         DynamoCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_MODIFY_NESTED) == 'UPDATE "foo" '
-        "SET data['tags'] = ['foo', 'bar'], data['empty_map'] = {}, data['empty_list'] = [],"
+        "SET data['tags'] = ['foo', 'bar'], data['empty_map'] = '{}', data['empty_list'] = [],"
         " data['string_set'] = ['location_1'], data['number_set'] = [0.34, 1.0, 2.0, 3.0],"
-        " data['binary_set'] = ['U3Vubnk='] WHERE data['device'] = 'foo' AND data['timestamp'] = '2024-07-12T01:17:42';"
+        " data['binary_set'] = ['U3Vubnk='], data['somemap'] = '{\"test\": 1.0, \"test2\": 2.0}'"
+        " WHERE data['device'] = 'foo' AND data['timestamp'] = '2024-07-12T01:17:42';"
     )
 
 
