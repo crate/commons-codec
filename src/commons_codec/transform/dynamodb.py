@@ -13,7 +13,6 @@ from commons_codec.vendor.boto3.dynamodb.types import DYNAMODB_CONTEXT, TypeDese
 
 logger = logging.getLogger(__name__)
 
-
 # Inhibit Inexact Exceptions
 DYNAMODB_CONTEXT.traps[decimal.Inexact] = False
 # Inhibit Rounded Exceptions
@@ -170,11 +169,15 @@ class DynamoCDCTranslatorCrateDB(DynamoCDCTranslatorBase):
         for key_name, key_value in values_clause.items():
             if key_value is None:
                 key_value = "NULL"
+
             elif isinstance(key_value, str):
                 key_value = "'" + str(key_value).replace("'", "''") + "'"
+
+            if isinstance(key_value, dict):
+                key_value = repr(json.dumps(key_value))
+
             constraint = f"{self.DATA_COLUMN}['{key_name}'] = {key_value}"
             constraints.append(constraint)
-
         return ", ".join(constraints)
 
     def keys_to_where(self, keys: t.Dict[str, t.Dict[str, str]]) -> str:

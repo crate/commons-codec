@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- DynamoDB: Fix `Map` representation to CrateDB.
 
 ## 2024/08/22 v0.0.9
 - DynamoDB: Fix `String Set` and `Number Set` representation for CrateDB
