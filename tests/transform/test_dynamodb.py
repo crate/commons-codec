@@ -82,6 +82,8 @@ MSG_MODIFY_BASIC = {
             "string_set": {"SS": ["location_1"]},
             "number_set": {"NS": [1, 2, 3, 0.34]},
             "binary_set": {"BS": ["U3Vubnk="]},
+            "empty_string": {"S": ""},
+            "null_string": {"S": None},
         },
         "OldImage": {
             "humidity": {"N": "84.84"},
@@ -197,7 +199,7 @@ def test_decode_cdc_modify_basic():
         DynamoCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_MODIFY_BASIC) == 'UPDATE "foo" '
         "SET data['humidity'] = 84.84, data['temperature'] = 55.66, data['location'] = 'Sydney', "
         "data['string_set'] = ['location_1'], data['number_set'] = [0.34, 1.0, 2.0, 3.0],"
-        " data['binary_set'] = ['U3Vubnk=']"
+        " data['binary_set'] = ['U3Vubnk='], data['empty_string'] = '', data['null_string'] = NULL"
         " WHERE data['device'] = 'foo' AND data['timestamp'] = '2024-07-12T01:17:42';"
     )
 

@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- DynamoDB: Fix `String Set` and `Number Set` representation for CrateDB
+- DynamoDB: Fix serializing empty strings
 
 ## 2024/08/20 v0.0.8
 - DynamoDB: Apply rough type evaluation and dispatching when computing
