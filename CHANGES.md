@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## 2024/08/22 v0.0.10
 - DynamoDB: Fix `Map` representation to CrateDB.
 
 ## 2024/08/22 v0.0.9
