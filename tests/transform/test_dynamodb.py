@@ -127,6 +127,7 @@ MSG_MODIFY_NESTED = {
                     "test2": {"N": 2},
                 }
             },
+            "list_of_objects": {"L": [{"M": {"foo": {"S": "bar"}}}, {"M": {"baz": {"S": "qux"}}}]},
         },
         "OldImage": {
             "humidity": {"N": "84.84"},
@@ -224,9 +225,10 @@ def test_decode_cdc_modify_basic():
 def test_decode_cdc_modify_nested():
     assert (
         DynamoCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_MODIFY_NESTED) == 'UPDATE "foo" '
-        "SET data['tags'] = ['foo', 'bar'], data['empty_map'] = '{}', data['empty_list'] = [],"
+        "SET data['tags'] = ['foo', 'bar'], data['empty_map'] = '{}'::OBJECT, data['empty_list'] = [],"
         " data['string_set'] = ['location_1'], data['number_set'] = [0.34, 1.0, 2.0, 3.0],"
-        " data['binary_set'] = ['U3Vubnk='], data['somemap'] = '{\"test\": 1.0, \"test2\": 2.0}'"
+        " data['binary_set'] = ['U3Vubnk='], data['somemap'] = '{\"test\": 1.0, \"test2\": 2.0}'::OBJECT,"
+        " data['list_of_objects'] = [{foo='bar'},{baz='qux'}]"
         " WHERE data['device'] = 'foo' AND data['timestamp'] = '2024-07-12T01:17:42';"
     )
 
