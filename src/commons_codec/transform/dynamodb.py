@@ -177,20 +177,8 @@ class DynamoCDCTranslatorCrateDB(DynamoCDCTranslatorBase):
                 # TODO: Does it also need escaping of inner TEXT values, like the above?
                 key_value = "'" + json.dumps(key_value) + "'::OBJECT"
 
-            # TODO: ARRAY types do not support JSON syntax yet.
-            #       Let's relay them 1:1, which works for primitive inner types,
-            #       but complex ones need special treatment, like representing
-            #       OBJECTs in CrateDB-native syntax.
-            # FIXME: Find a way to use a custom JSONEncoder for that, in order to
-            #        fully support also nested elements of those.
-            # https://github.com/crate/commons-codec/issues/33
-            elif isinstance(key_value, list):
-                if key_value:
-                    if isinstance(key_value[0], dict):
-                        items = []
-                        for item in key_value:
-                            items.append("{" + ", ".join(f"{key}='{value}'" for key, value in item.items()) + "}")
-                        key_value = "[" + ",".join(items) + "]"
+            elif isinstance(key_value, list) and key_value and isinstance(key_value[0], dict):
+                key_value = "'" + json.dumps(key_value) + "'::OBJECT[]"
 
             constraint = f"{self.DATA_COLUMN}['{key_name}'] = {key_value}"
             constraints.append(constraint)
