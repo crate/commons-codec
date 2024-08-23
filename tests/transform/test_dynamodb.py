@@ -228,7 +228,7 @@ def test_decode_cdc_modify_nested():
         "SET data['tags'] = ['foo', 'bar'], data['empty_map'] = '{}'::OBJECT, data['empty_list'] = [],"
         " data['string_set'] = ['location_1'], data['number_set'] = [0.34, 1.0, 2.0, 3.0],"
         " data['binary_set'] = ['U3Vubnk='], data['somemap'] = '{\"test\": 1.0, \"test2\": 2.0}'::OBJECT,"
-        " data['list_of_objects'] = [{foo='bar'},{baz='qux'}]"
+        ' data[\'list_of_objects\'] = \'[{"foo": "bar"}, {"baz": "qux"}]\'::OBJECT[]'
         " WHERE data['device'] = 'foo' AND data['timestamp'] = '2024-07-12T01:17:42';"
     )
 
