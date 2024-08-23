@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## 2024/08/23 v0.0.11
 - DynamoDB: Fix serializing OBJECT and ARRAY representations to CrateDB
 
 ## 2024/08/22 v0.0.10
