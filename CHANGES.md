@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- DynamoDB: Fix serializing OBJECT and ARRAY representations to CrateDB
 
 ## 2024/08/22 v0.0.10
 - DynamoDB: Fix `Map` representation to CrateDB.
