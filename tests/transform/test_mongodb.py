@@ -3,6 +3,8 @@ import datetime
 
 import pytest
 
+from commons_codec.model import SQLOperation
+
 pytest.importorskip("pymongo")
 
 from bson import ObjectId, Timestamp
@@ -117,42 +119,50 @@ def test_decode_cdc_optype_empty():
 
 
 def test_decode_cdc_insert():
-    assert (
-        MongoDBCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_INSERT) == 'INSERT INTO "foo" (oid, data) '
-        'VALUES (\'669683c2b0750b2c84893f3e\', \'{"_id": {"$oid": "669683c2b0750b2c84893f3e"}, "id": "5F9E", '
-        '"data": {"temperature": 42.42, "humidity": 84.84}, '
-        '"meta": {"timestamp": {"$date": "2024-07-11T23:17:42Z"}, "device": "foo"}}\');'
+    assert MongoDBCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_INSERT) == SQLOperation(
+        statement='INSERT INTO "foo" (oid, data) VALUES (:oid, :record);',
+        parameters={
+            "oid": "669683c2b0750b2c84893f3e",
+            "record": {
+                "_id": {"$oid": "669683c2b0750b2c84893f3e"},
+                "id": "5F9E",
+                "data": {"temperature": 42.42, "humidity": 84.84},
+                "meta": {"timestamp": {"$date": "2024-07-11T23:17:42Z"}, "device": "foo"},
+            },
+        },
     )
 
 
 def test_decode_cdc_update():
-    assert (
-        MongoDBCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_UPDATE)
-        == """UPDATE "foo" SET data = '{"_id": {"$oid": "669683c2b0750b2c84893f3e"}, "id": "5F9E", """
-        """"data": {"temperature": 42.5}, "meta": {"timestamp": {"$date": "2024-07-11T23:17:42Z"}, "device": "foo"}}' """
-        "WHERE oid = '669683c2b0750b2c84893f3e';"
+    assert MongoDBCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_UPDATE) == SQLOperation(
+        statement="UPDATE \"foo\" SET data = :record WHERE oid = '669683c2b0750b2c84893f3e';",
+        parameters={
+            "record": {
+                "_id": {"$oid": "669683c2b0750b2c84893f3e"},
+                "id": "5F9E",
+                "data": {"temperature": 42.5},
+                "meta": {"timestamp": {"$date": "2024-07-11T23:17:42Z"}, "device": "foo"},
+            }
+        },
     )
 
 
 def test_decode_cdc_replace():
-    assert (
-        MongoDBCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_REPLACE)
-        == """UPDATE "foo" SET data = '{"_id": {"$oid": "669683c2b0750b2c84893f3e"}, """
-        """"tags": ["deleted"]}' """
-        "WHERE oid = '669683c2b0750b2c84893f3e';"
+    assert MongoDBCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_REPLACE) == SQLOperation(
+        statement="UPDATE \"foo\" SET data = :record WHERE oid = '669683c2b0750b2c84893f3e';",
+        parameters={"record": {"_id": {"$oid": "669683c2b0750b2c84893f3e"}, "tags": ["deleted"]}},
     )
 
 
 def test_decode_cdc_delete():
-    assert (
-        MongoDBCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_DELETE)
-        == """DELETE FROM "foo" WHERE oid = '669693c5002ef91ea9c7a562';"""
+    assert MongoDBCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_DELETE) == SQLOperation(
+        statement="DELETE FROM \"foo\" WHERE oid = '669693c5002ef91ea9c7a562';", parameters=None
     )
 
 
 def test_decode_cdc_drop():
-    assert MongoDBCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_DROP) == ""
+    assert MongoDBCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_DROP) is None
 
 
 def test_decode_cdc_invalidate():
-    assert MongoDBCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_INVALIDATE) == ""
+    assert MongoDBCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_INVALIDATE) is None

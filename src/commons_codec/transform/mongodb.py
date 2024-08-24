@@ -6,8 +6,9 @@
 import logging
 import typing as t
 
-import simplejson as json
 from bson.json_util import _json_convert
+
+from commons_codec.model import SQLOperation
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +29,11 @@ class MongoDBCDCTranslatorBase:
     - https://www.mongodb.com/developer/languages/python/python-change-streams/
     """
 
-    def deserialize_item(self, item: t.Dict[str, t.Dict[str, str]]) -> t.Dict[str, str]:
+    def decode_bson(self, item: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
         """
-        Deserialize MongoDB type-enriched nested JSON snippet into vanilla Python.
+        Convert MongoDB Extended JSON to vanilla Python dictionary.
+
+        https://www.mongodb.com/docs/manual/reference/mongodb-extended-json/
 
         Example:
         {
@@ -38,6 +41,21 @@ class MongoDBCDCTranslatorBase:
           "id": "5F9E",
           "data": {"temperature": 42.42, "humidity": 84.84},
           "meta": {"timestamp": datetime.datetime(2024, 7, 11, 23, 17, 42), "device": "foo"},
+        }
+
+        IN (top-level stripped):
+        "fullDocument": {
+            "_id": ObjectId("669683c2b0750b2c84893f3e"),
+            "id": "5F9E",
+            "data": {"temperature": 42.42, "humidity": 84.84},
+            "meta": {"timestamp": datetime.datetime(2024, 7, 11, 23, 17, 42), "device": "foo"},
+        }
+
+        OUT:
+        {"_id": {"$oid": "669683c2b0750b2c84893f3e"},
+         "id": "5F9E",
+         "data": {"temperature": 42.42, "humidity": 84.84},
+         "meta": {"timestamp": {"$date": "2024-07-11T23:17:42Z"}, "device": "foo"},
         }
         """
         return _json_convert(item)
@@ -94,52 +112,49 @@ class MongoDBCDCTranslatorCrateDB(MongoDBCDCTranslatorBase):
             f"CREATE TABLE IF NOT EXISTS {self.table_name} ({self.ID_COLUMN} TEXT, {self.DATA_COLUMN} OBJECT(DYNAMIC));"
         )
 
-    def to_sql(self, record: t.Dict[str, t.Any]) -> str:
+    def to_sql(self, event: t.Dict[str, t.Any]) -> t.Union[SQLOperation, None]:
         """
         Produce INSERT|UPDATE|DELETE SQL statement from insert|update|replace|delete CDC event record.
         """
 
-        if "operationType" in record and record["operationType"]:
-            operation_type: str = str(record["operationType"])
+        if "operationType" in event and event["operationType"]:
+            operation_type: str = str(event["operationType"])
         else:
-            raise ValueError(f"Operation Type missing or empty: {record}")
+            raise ValueError(f"Operation Type missing or empty: {event}")
 
         if operation_type == "insert":
-            oid: str = self.get_document_key(record)
-            full_document = self.get_full_document(record)
-            values_clause = self.full_document_to_values(full_document)
-            sql = (
-                f"INSERT INTO {self.table_name} "
-                f"({self.ID_COLUMN}, {self.DATA_COLUMN}) "
-                f"VALUES ('{oid}', '{values_clause}');"
-            )
+            oid: str = self.get_document_key(event)
+            record = self.decode_bson(self.get_full_document(event))
+            sql = f"INSERT INTO {self.table_name} " f"({self.ID_COLUMN}, {self.DATA_COLUMN}) " "VALUES (:oid, :record);"
+            parameters = {"oid": oid, "record": record}
 
         # In order to use "full document" representations from "update" events,
         # you need to use `watch(full_document="updateLookup")`.
         # https://www.mongodb.com/docs/manual/changeStreams/#lookup-full-document-for-update-operations
         elif operation_type in ["update", "replace"]:
-            full_document = self.get_full_document(record)
-            values_clause = self.full_document_to_values(full_document)
-            where_clause = self.where_clause(record)
-            sql = f"UPDATE {self.table_name} SET {self.DATA_COLUMN} = '{values_clause}' WHERE {where_clause};"
+            record = self.decode_bson(self.get_full_document(event))
+            where_clause = self.where_clause(event)
+            sql = f"UPDATE {self.table_name} " f"SET {self.DATA_COLUMN} = :record " f"WHERE {where_clause};"
+            parameters = {"record": record}
 
         elif operation_type == "delete":
-            where_clause = self.where_clause(record)
+            where_clause = self.where_clause(event)
             sql = f"DELETE FROM {self.table_name} WHERE {where_clause};"
+            parameters = None
 
         # TODO: Enable applying the "drop" operation conditionally when enabled.
         elif operation_type == "drop":
             logger.info("Received 'drop' operation, but skipping to apply 'DROP TABLE'")
-            sql = ""
+            return None
 
         elif operation_type == "invalidate":
             logger.info("Ignoring 'invalidate' CDC operation")
-            sql = ""
+            return None
 
         else:
             raise ValueError(f"Unknown CDC operation type: {operation_type}")
 
-        return sql
+        return SQLOperation(sql, parameters)
 
     @staticmethod
     def get_document_key(record: t.Dict[str, t.Any]) -> str:
@@ -156,27 +171,6 @@ class MongoDBCDCTranslatorCrateDB(MongoDBCDCTranslatorBase):
         return `fullDocument` representation from record.
         """
         return t.cast(dict, record.get("fullDocument"))
-
-    def full_document_to_values(self, document: t.Dict[str, t.Any]) -> str:
-        """
-        Serialize CDC event's "fullDocument" representation to a `VALUES` clause in CrateDB SQL syntax.
-
-        IN (top-level stripped):
-        "fullDocument": {
-            "_id": ObjectId("669683c2b0750b2c84893f3e"),
-            "id": "5F9E",
-            "data": {"temperature": 42.42, "humidity": 84.84},
-            "meta": {"timestamp": datetime.datetime(2024, 7, 11, 23, 17, 42), "device": "foo"},
-        }
-
-        OUT:
-        {"_id": {"$oid": "669683c2b0750b2c84893f3e"},
-         "id": "5F9E",
-         "data": {"temperature": 42.42, "humidity": 84.84},
-         "meta": {"timestamp": {"$date": "2024-07-11T23:17:42Z"}, "device": "foo"},
-        }
-        """
-        return json.dumps(self.deserialize_item(document))
 
     def where_clause(self, record: t.Dict[str, t.Any]) -> str:
         """
