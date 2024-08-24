@@ -5,7 +5,7 @@ import json
 import pytest
 
 from commons_codec.exception import MessageFormatError, UnknownOperationError
-from commons_codec.model import ColumnType, ColumnTypeMapStore, TableAddress
+from commons_codec.model import ColumnType, ColumnTypeMapStore, SQLOperation, TableAddress
 from commons_codec.transform.aws_dms import DMSTranslatorCrateDB
 
 RECORD_INSERT = {"age": 31, "attributes": {"baz": "qux"}, "id": 46, "name": "Jane"}
@@ -212,19 +212,20 @@ def test_decode_cdc_unknown_event(cdc):
 
 
 def test_decode_cdc_sql_ddl_regular(cdc):
-    assert cdc.to_sql(MSG_CONTROL_CREATE_TABLE) == 'CREATE TABLE IF NOT EXISTS "public"."foo" (data OBJECT(DYNAMIC));'
+    assert cdc.to_sql(MSG_CONTROL_CREATE_TABLE) == SQLOperation(
+        statement='CREATE TABLE IF NOT EXISTS "public"."foo" (data OBJECT(DYNAMIC));', parameters=None
+    )
 
 
 def test_decode_cdc_sql_ddl_awsdms(cdc):
-    assert (
-        cdc.to_sql(MSG_CONTROL_AWSDMS)
-        == 'CREATE TABLE IF NOT EXISTS "dms"."awsdms_apply_exceptions" (data OBJECT(DYNAMIC));'
+    assert cdc.to_sql(MSG_CONTROL_AWSDMS) == SQLOperation(
+        statement='CREATE TABLE IF NOT EXISTS "dms"."awsdms_apply_exceptions" (data OBJECT(DYNAMIC));', parameters=None
     )
 
 
 def test_decode_cdc_insert(cdc):
-    assert (
-        cdc.to_sql(MSG_DATA_INSERT) == 'INSERT INTO "public"."foo" (data) VALUES ' f"('{json.dumps(RECORD_INSERT)}');"
+    assert cdc.to_sql(MSG_DATA_INSERT) == SQLOperation(
+        statement='INSERT INTO "public"."foo" (data) VALUES (:record);', parameters={"record": RECORD_INSERT}
     )
 
 
@@ -236,10 +237,11 @@ def test_decode_cdc_update_success(cdc):
     cdc.to_sql(MSG_CONTROL_CREATE_TABLE)
 
     # Emulate an UPDATE operation.
-    assert (
-        cdc.to_sql(MSG_DATA_UPDATE_VALUE) == 'UPDATE "public"."foo" '
-        "SET data['age'] = '33', data['attributes'] = '{\"foo\": \"bar\"}', data['name'] = 'John' "
-        "WHERE data['id'] = '42';"
+    assert cdc.to_sql(MSG_DATA_UPDATE_VALUE) == SQLOperation(
+        statement='UPDATE "public"."foo" SET '
+        "data['age']=:age, data['attributes']=:attributes, data['name']=:name "
+        "WHERE data['id'] = '42';",
+        parameters={"record": RECORD_UPDATE},
     )
 
 
@@ -264,7 +266,9 @@ def test_decode_cdc_delete_success(cdc):
     cdc.to_sql(MSG_CONTROL_CREATE_TABLE)
 
     # Emulate a DELETE operation.
-    assert cdc.to_sql(MSG_DATA_DELETE) == 'DELETE FROM "public"."foo" ' "WHERE data['id'] = '45';"
+    assert cdc.to_sql(MSG_DATA_DELETE) == SQLOperation(
+        statement="DELETE FROM \"public\".\"foo\" WHERE data['id'] = '45';", parameters=None
+    )
 
 
 def test_decode_cdc_delete_failure(cdc):

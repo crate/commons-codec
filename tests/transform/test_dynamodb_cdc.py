@@ -3,7 +3,8 @@ from decimal import Decimal
 
 import pytest
 
-from commons_codec.transform.dynamodb import CrateDBTypeDeserializer, DynamoCDCTranslatorCrateDB
+from commons_codec.model import SQLOperation
+from commons_codec.transform.dynamodb import CrateDBTypeDeserializer, DynamoDBCDCTranslator
 
 READING_BASIC = {"device": "foo", "temperature": 42.42, "humidity": 84.84}
 
@@ -174,69 +175,103 @@ MSG_REMOVE = {
 
 
 def test_decode_ddb_deserialize_type():
-    assert DynamoCDCTranslatorCrateDB(table_name="foo").deserialize_item({"foo": {"N": "84.84"}}) == {"foo": 84.84}
+    assert DynamoDBCDCTranslator(table_name="foo").decode_record({"foo": {"N": "84.84"}}) == {"foo": 84.84}
 
 
 def test_decode_cdc_sql_ddl():
-    assert DynamoCDCTranslatorCrateDB(table_name="foo").sql_ddl == 'CREATE TABLE "foo" (data OBJECT(DYNAMIC));'
+    assert DynamoDBCDCTranslator(table_name="foo").sql_ddl == 'CREATE TABLE IF NOT EXISTS "foo" (data OBJECT(DYNAMIC));'
 
 
 def test_decode_cdc_unknown_source():
     with pytest.raises(ValueError) as ex:
-        DynamoCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_UNKNOWN_SOURCE)
+        DynamoDBCDCTranslator(table_name="foo").to_sql(MSG_UNKNOWN_SOURCE)
     assert ex.match("Unknown eventSource: foo:bar")
 
 
 def test_decode_cdc_unknown_event():
     with pytest.raises(ValueError) as ex:
-        DynamoCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_UNKNOWN_EVENT)
+        DynamoDBCDCTranslator(table_name="foo").to_sql(MSG_UNKNOWN_EVENT)
     assert ex.match("Unknown CDC event name: FOOBAR")
 
 
 def test_decode_cdc_insert_basic():
-    assert (
-        DynamoCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_INSERT_BASIC) == 'INSERT INTO "foo" (data) '
-        'VALUES (\'{"humidity": 84.84, "temperature": 42.42, "device": "foo", "timestamp": "2024-07-12T01:17:42",'
-        ' "string_set": ["location_1"], "number_set": [1.0, 2.0, 3.0, 4.0], "binary_set": ["U3Vubnk="]}\');'
+    assert DynamoDBCDCTranslator(table_name="foo").to_sql(MSG_INSERT_BASIC) == SQLOperation(
+        statement='INSERT INTO "foo" (data) VALUES (:record);',
+        parameters={
+            "record": {
+                "humidity": 84.84,
+                "temperature": 42.42,
+                "device": "foo",
+                "timestamp": "2024-07-12T01:17:42",
+                "string_set": ["location_1"],
+                "number_set": [1.0, 2.0, 3.0, 4.0],
+                "binary_set": ["U3Vubnk="],
+            }
+        },
     )
 
 
 def test_decode_cdc_insert_nested():
-    assert (
-        DynamoCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_INSERT_NESTED)
-        == 'INSERT INTO "foo" (data) VALUES (\'{"id": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266", '
-        '"data": {"temperature": 42.42, "humidity": 84.84}, '
-        '"meta": {"timestamp": "2024-07-12T01:17:42", "device": "foo"},'
-        ' "string_set": ["location_1"], "number_set": [0.34, 1.0, 2.0, 3.0],'
-        ' "binary_set": ["U3Vubnk="], "somemap": {"test": 1.0, "test2": 2.0}}\');'
+    assert DynamoDBCDCTranslator(table_name="foo").to_sql(MSG_INSERT_NESTED) == SQLOperation(
+        statement='INSERT INTO "foo" (data) VALUES (:record);',
+        parameters={
+            "record": {
+                "id": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266",
+                "data": {"temperature": 42.42, "humidity": 84.84},
+                "meta": {"timestamp": "2024-07-12T01:17:42", "device": "foo"},
+                "string_set": ["location_1"],
+                "number_set": [0.34, 1.0, 2.0, 3.0],
+                "binary_set": ["U3Vubnk="],
+                "somemap": {"test": 1.0, "test2": 2.0},
+            }
+        },
     )
 
 
 def test_decode_cdc_modify_basic():
-    assert (
-        DynamoCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_MODIFY_BASIC) == 'UPDATE "foo" '
-        "SET data['humidity'] = 84.84, data['temperature'] = 55.66, data['location'] = 'Sydney', "
-        "data['string_set'] = ['location_1'], data['number_set'] = [0.34, 1.0, 2.0, 3.0],"
-        " data['binary_set'] = ['U3Vubnk='], data['empty_string'] = '', data['null_string'] = NULL"
-        " WHERE data['device'] = 'foo' AND data['timestamp'] = '2024-07-12T01:17:42';"
+    assert DynamoDBCDCTranslator(table_name="foo").to_sql(MSG_MODIFY_BASIC) == SQLOperation(
+        statement='UPDATE "foo" SET '
+        "data['humidity']=:humidity, data['temperature']=:temperature, data['location']=:location, "
+        "data['string_set']=:string_set, data['number_set']=:number_set, data['binary_set']=:binary_set, "
+        "data['empty_string']=:empty_string, data['null_string']=:null_string "
+        "WHERE data['device'] = 'foo' AND data['timestamp'] = '2024-07-12T01:17:42';",
+        parameters={
+            "humidity": 84.84,
+            "temperature": 55.66,
+            "location": "Sydney",
+            "string_set": ["location_1"],
+            "number_set": [0.34, 1.0, 2.0, 3.0],
+            "binary_set": ["U3Vubnk="],
+            "empty_string": "",
+            "null_string": None,
+        },
     )
 
 
 def test_decode_cdc_modify_nested():
-    assert (
-        DynamoCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_MODIFY_NESTED) == 'UPDATE "foo" '
-        "SET data['tags'] = ['foo', 'bar'], data['empty_map'] = '{}'::OBJECT, data['empty_list'] = [],"
-        " data['string_set'] = ['location_1'], data['number_set'] = [0.34, 1.0, 2.0, 3.0],"
-        " data['binary_set'] = ['U3Vubnk='], data['somemap'] = '{\"test\": 1.0, \"test2\": 2.0}'::OBJECT,"
-        ' data[\'list_of_objects\'] = \'[{"foo": "bar"}, {"baz": "qux"}]\'::OBJECT[]'
-        " WHERE data['device'] = 'foo' AND data['timestamp'] = '2024-07-12T01:17:42';"
+    assert DynamoDBCDCTranslator(table_name="foo").to_sql(MSG_MODIFY_NESTED) == SQLOperation(
+        statement='UPDATE "foo" SET '
+        "data['tags']=:tags, data['empty_map']=CAST(:empty_map AS OBJECT), data['empty_list']=:empty_list, "
+        "data['string_set']=:string_set, data['number_set']=:number_set, data['binary_set']=:binary_set, "
+        "data['somemap']=CAST(:somemap AS OBJECT), data['list_of_objects']=CAST(:list_of_objects AS OBJECT[]) "
+        "WHERE data['device'] = 'foo' AND data['timestamp'] = '2024-07-12T01:17:42';",
+        parameters={
+            "tags": ["foo", "bar"],
+            "empty_map": {},
+            "empty_list": [],
+            "string_set": ["location_1"],
+            "number_set": [0.34, 1.0, 2.0, 3.0],
+            "binary_set": ["U3Vubnk="],
+            "somemap": {"test": 1.0, "test2": 2.0},
+            "list_of_objects": [{"foo": "bar"}, {"baz": "qux"}],
+        },
     )
 
 
 def test_decode_cdc_remove():
-    assert (
-        DynamoCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_REMOVE) == 'DELETE FROM "foo" '
-        "WHERE data['device'] = 'bar' AND data['timestamp'] = '2024-07-12T01:17:42';"
+    assert DynamoDBCDCTranslator(table_name="foo").to_sql(MSG_REMOVE) == SQLOperation(
+        statement="DELETE FROM \"foo\" WHERE data['device'] = 'bar' AND data['timestamp'] = '2024-07-12T01:17:42';",
+        parameters=None,
     )
 
 

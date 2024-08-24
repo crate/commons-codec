@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- DMS/DynamoDB/MongoDB: Use SQL with parameters instead of inlining values
 
 ## 2024/08/23 v0.0.11
 - DynamoDB: Fix serializing OBJECT and ARRAY representations to CrateDB

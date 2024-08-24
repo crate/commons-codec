@@ -6,9 +6,9 @@ import decimal
 import logging
 import typing as t
 
-import simplejson as json
 import toolz
 
+from commons_codec.model import SQLOperation, SQLParameterizedClause
 from commons_codec.vendor.boto3.dynamodb.types import DYNAMODB_CONTEXT, TypeDeserializer
 
 logger = logging.getLogger(__name__)
@@ -36,17 +36,40 @@ class CrateDBTypeDeserializer(TypeDeserializer):
         return list(super()._deserialize_bs(value))
 
 
-class DynamoCDCTranslatorBase:
+class DynamoTranslatorBase:
     """
     Translate DynamoDB CDC events into different representations.
     """
 
-    def __init__(self):
+    # Define name of the column where CDC's record data will get materialized into.
+    DATA_COLUMN = "data"
+
+    def __init__(self, table_name: str):
+        super().__init__()
+        self.table_name = self.quote_table_name(table_name)
         self.deserializer = CrateDBTypeDeserializer()
 
-    def deserialize_item(self, item: t.Dict[str, t.Dict[str, str]]) -> t.Dict[str, str]:
+    @property
+    def sql_ddl(self):
+        """`
+        Define SQL DDL statement for creating table in CrateDB that stores re-materialized CDC events.
         """
-        Deserialize DynamoDB type-enriched nested JSON snippet into vanilla Python.
+        return f"CREATE TABLE IF NOT EXISTS {self.table_name} ({self.DATA_COLUMN} OBJECT(DYNAMIC));"
+
+    @staticmethod
+    def quote_table_name(name: str):
+        """
+        Poor man's table quoting.
+
+        TODO: Better use or vendorize canonical table quoting function from CrateDB Toolkit, when applicable.
+        """
+        if '"' not in name and "." not in name:
+            name = f'"{name}"'
+        return name
+
+    def decode_record(self, item: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
+        """
+        Deserialize DynamoDB JSON record into vanilla Python.
 
         Example:
         {
@@ -74,7 +97,17 @@ class DynamoCDCTranslatorBase:
         return toolz.valmap(self.deserializer.deserialize, item)
 
 
-class DynamoCDCTranslatorCrateDB(DynamoCDCTranslatorBase):
+class DynamoDBFullLoadTranslator(DynamoTranslatorBase):
+    def to_sql(self, record: t.Dict[str, t.Any]) -> SQLOperation:
+        """
+        Produce INSERT|UPDATE|DELETE SQL statement from INSERT|MODIFY|REMOVE CDC event record.
+        """
+        record = self.decode_record(record)
+        sql = f"INSERT INTO {self.table_name} ({self.DATA_COLUMN}) VALUES (:record);"
+        return SQLOperation(sql, {"record": record})
+
+
+class DynamoDBCDCTranslator(DynamoTranslatorBase):
     """
     Translate DynamoDB CDC events into CrateDB SQL statements that materialize them again.
 
@@ -85,74 +118,47 @@ class DynamoCDCTranslatorCrateDB(DynamoCDCTranslatorBase):
     https://www.singlestore.com/blog/cdc-data-from-dynamodb-to-singlestore-using-dynamodb-streams/
     """
 
-    # Define name of the column where CDC's record data will get materialized into.
-    DATA_COLUMN = "data"
-
-    def __init__(self, table_name: str):
-        super().__init__()
-        self.table_name = self.quote_table_name(table_name)
-
-    @property
-    def sql_ddl(self):
-        """
-        Define SQL DDL statement for creating table in CrateDB that stores re-materialized CDC events.
-        """
-        return f"CREATE TABLE {self.table_name} ({self.DATA_COLUMN} OBJECT(DYNAMIC));"
-
-    def to_sql(self, record: t.Dict[str, t.Any]) -> str:
+    def to_sql(self, event: t.Dict[str, t.Any]) -> SQLOperation:
         """
         Produce INSERT|UPDATE|DELETE SQL statement from INSERT|MODIFY|REMOVE CDC event record.
         """
-        event_source = record.get("eventSource")
-        event_name = record.get("eventName")
+        event_source = event.get("eventSource")
+        event_name = event.get("eventName")
 
         if event_source != "aws:dynamodb":
             raise ValueError(f"Unknown eventSource: {event_source}")
 
         if event_name == "INSERT":
-            values_clause = self.image_to_values(record["dynamodb"]["NewImage"])
-            sql = f"INSERT INTO {self.table_name} " f"({self.DATA_COLUMN}) " f"VALUES ('{values_clause}');"
+            record = self.decode_record(event["dynamodb"]["NewImage"])
+            sql = f"INSERT INTO {self.table_name} ({self.DATA_COLUMN}) VALUES (:record);"
+            parameters = {"record": record}
 
         elif event_name == "MODIFY":
-            new_image_cleaned = record["dynamodb"]["NewImage"]
+            new_image = event["dynamodb"]["NewImage"]
             # Drop primary key columns to not update them.
             # Primary key values should be identical (if chosen identical in DynamoDB and CrateDB),
-            # but CrateDB does not allow having themin an UPDATE's SET clause.
-            for key in record["dynamodb"]["Keys"]:
-                del new_image_cleaned[key]
+            # but CrateDB does not allow having them in an UPDATE's SET clause.
+            for key in event["dynamodb"]["Keys"]:
+                del new_image[key]
 
-            values_clause = self.values_to_update(new_image_cleaned)
+            record = self.decode_record(event["dynamodb"]["NewImage"])
+            clause = self.update_clause(record)
 
-            where_clause = self.keys_to_where(record["dynamodb"]["Keys"])
-            sql = f"UPDATE {self.table_name} " f"SET {values_clause} " f"WHERE {where_clause};"
+            where_clause = self.keys_to_where(event["dynamodb"]["Keys"])
+            sql = f"UPDATE {self.table_name} SET {clause.set_clause} WHERE {where_clause};"
+            parameters = record
 
         elif event_name == "REMOVE":
-            where_clause = self.keys_to_where(record["dynamodb"]["Keys"])
-            sql = f"DELETE FROM {self.table_name} " f"WHERE {where_clause};"
+            where_clause = self.keys_to_where(event["dynamodb"]["Keys"])
+            sql = f"DELETE FROM {self.table_name} WHERE {where_clause};"
+            parameters = None
 
         else:
             raise ValueError(f"Unknown CDC event name: {event_name}")
 
-        return sql
+        return SQLOperation(sql, parameters)
 
-    def image_to_values(self, image: t.Dict[str, t.Any]) -> str:
-        """
-        Serialize CDC event's "(New|Old)Image" representation to a `VALUES` clause in CrateDB SQL syntax.
-
-        IN (top-level stripped):
-        "NewImage": {
-            "humidity": {"N": "84.84"},
-            "temperature": {"N": "42.42"},
-            "device": {"S": "foo"},
-            "timestamp": {"S": "2024-07-12T01:17:42"},
-        }
-
-        OUT:
-        {"humidity": 84.84, "temperature": 42.42, "device": "foo", "timestamp": "2024-07-12T01:17:42"}
-        """
-        return json.dumps(self.deserialize_item(image))
-
-    def values_to_update(self, keys: t.Dict[str, t.Dict[str, str]]) -> str:
+    def update_clause(self, record: t.Dict[str, t.Any]) -> SQLParameterizedClause:
         """
         Serializes an image to a comma-separated list of column/values pairs
         that can be used in the `SET` clause of an `UPDATE` statement.
@@ -161,28 +167,25 @@ class DynamoCDCTranslatorCrateDB(DynamoCDCTranslatorBase):
         {'humidity': {'N': '84.84'}, 'temperature': {'N': '55.66'}}
 
         OUT:
-        data['humidity] = '84.84', temperature = '55.66'
+        data['humidity'] = '84.84', data['temperature'] = '55.66'
         """
-        values_clause = self.deserialize_item(keys)
 
-        constraints: t.List[str] = []
-        for key_name, key_value in values_clause.items():
-            if key_value is None:
-                key_value = "NULL"
+        clause = SQLParameterizedClause()
+        for column, value in record.items():
+            param_name = f":{column}"
+            if value is None:
+                value = "NULL"
 
-            elif isinstance(key_value, str):
-                key_value = "'" + str(key_value).replace("'", "''") + "'"
+            elif isinstance(value, dict):
+                param_name = f"CAST({param_name} AS OBJECT)"
 
-            elif isinstance(key_value, dict):
-                # TODO: Does it also need escaping of inner TEXT values, like the above?
-                key_value = "'" + json.dumps(key_value) + "'::OBJECT"
+            elif isinstance(value, list) and value and isinstance(value[0], dict):
+                param_name = f"CAST({param_name} AS OBJECT[])"
 
-            elif isinstance(key_value, list) and key_value and isinstance(key_value[0], dict):
-                key_value = "'" + json.dumps(key_value) + "'::OBJECT[]"
-
-            constraint = f"{self.DATA_COLUMN}['{key_name}'] = {key_value}"
-            constraints.append(constraint)
-        return ", ".join(constraints)
+            clause.columns.append(f"{self.DATA_COLUMN}['{column}']")
+            clause.names.append(param_name)
+            clause.values.append(value)  # noqa: PD011
+        return clause
 
     def keys_to_where(self, keys: t.Dict[str, t.Dict[str, str]]) -> str:
         """
@@ -204,14 +207,3 @@ class DynamoCDCTranslatorCrateDB(DynamoCDCTranslatorBase):
             constraint = f"{self.DATA_COLUMN}['{key_name}'] = '{key_value}'"
             constraints.append(constraint)
         return " AND ".join(constraints)
-
-    @staticmethod
-    def quote_table_name(name: str):
-        """
-        Poor man's table quoting.
-
-        TODO: Better use or vendorize canonical table quoting function from CrateDB Toolkit, when applicable.
-        """
-        if '"' not in name:
-            name = f'"{name}"'
-        return name

@@ -3,12 +3,13 @@ import sys
 import typing as t
 from enum import auto
 
+from attr import Factory
+from attrs import define
+
 if sys.version_info >= (3, 11):
     from enum import StrEnum
 else:
     from backports.strenum import StrEnum  # pragma: no cover
-
-from attrs import define
 
 
 @define(frozen=True)
@@ -81,3 +82,33 @@ class ColumnTypeMapStore(dict):
         if not payload:
             return None
         return cls.from_dict(json.loads(payload))
+
+
+@define
+class SQLOperation:
+    """
+    Bundle data about an SQL operation, including statement and parameters.
+
+    Parameters can be a single dictionary or a list of dictionaries.
+    """
+
+    statement: str
+    parameters: t.Optional[t.Union[t.Mapping[str, t.Any], t.List[t.Mapping[str, t.Any]]]] = None
+
+
+@define
+class SQLParameterizedClause:
+    """
+    Manage details about a SQL parameterized clause, including column names, parameter names, and values.
+    """
+
+    columns: t.List[str] = Factory(list)
+    names: t.List[str] = Factory(list)
+    values: t.List[str] = Factory(list)
+
+    @property
+    def set_clause(self):
+        """
+        Render a SET clause of an SQL statement.
+        """
+        return ", ".join([f"{key}={value}" for key, value in zip(self.columns, self.names)])
