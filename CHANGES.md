@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## 2024/08/26 v0.0.12
 - DMS/DynamoDB/MongoDB: Use SQL with parameters instead of inlining values
 
 ## 2024/08/23 v0.0.11
