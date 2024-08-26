@@ -240,8 +240,8 @@ def test_decode_cdc_update_success(cdc):
     assert cdc.to_sql(MSG_DATA_UPDATE_VALUE) == SQLOperation(
         statement='UPDATE "public"."foo" SET '
         "data['age']=:age, data['attributes']=:attributes, data['name']=:name "
-        "WHERE data['id'] = '42';",
-        parameters={"record": RECORD_UPDATE},
+        "WHERE data['id']=:id;",
+        parameters=RECORD_UPDATE,
     )
 
 
@@ -267,7 +267,7 @@ def test_decode_cdc_delete_success(cdc):
 
     # Emulate a DELETE operation.
     assert cdc.to_sql(MSG_DATA_DELETE) == SQLOperation(
-        statement="DELETE FROM \"public\".\"foo\" WHERE data['id'] = '45';", parameters=None
+        statement='DELETE FROM "public"."foo" WHERE data[\'id\']=:id;', parameters={"id": 45}
     )
 
 

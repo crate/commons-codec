@@ -102,13 +102,38 @@ class SQLParameterizedClause:
     Manage details about a SQL parameterized clause, including column names, parameter names, and values.
     """
 
-    columns: t.List[str] = Factory(list)
-    names: t.List[str] = Factory(list)
-    values: t.List[str] = Factory(list)
+    lvals: t.List[str] = Factory(list)
+    rvals: t.List[str] = Factory(list)
+    values: t.Dict[str, t.Any] = Factory(dict)
 
-    @property
-    def set_clause(self):
+    def add(self, lval: str, value: t.Any, name: str, rval: str = None):
+        self.lvals.append(lval)
+        if rval is None:
+            self.rvals.append(f":{name}")
+        else:
+            self.rvals.append(rval)
+        self.values[name] = value
+
+    def render(self, delimiter: str) -> str:
+        """
+        Render a clause of an SQL statement.
+        """
+        return delimiter.join([f"{lval}={rval}" for lval, rval in zip(self.lvals, self.rvals)])
+
+
+@define
+class SQLParameterizedSetClause(SQLParameterizedClause):
+    def to_sql(self):
         """
         Render a SET clause of an SQL statement.
         """
-        return ", ".join([f"{key}={value}" for key, value in zip(self.columns, self.names)])
+        return self.render(", ")
+
+
+@define
+class SQLParameterizedWhereClause(SQLParameterizedClause):
+    def to_sql(self):
+        """
+        Render a WHERE clause of an SQL statement.
+        """
+        return self.render(" AND ")
