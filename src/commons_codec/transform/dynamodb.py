@@ -1,14 +1,16 @@
-# Copyright (c) 2023-2024, The Kotori Developers and contributors.
+# Copyright (c) 2021-2024, Crate.io Inc.
 # Distributed under the terms of the LGPLv3 license, see LICENSE.
 import decimal
-
-# ruff: noqa: S608 FIXME: Possible SQL injection vector through string-based query construction
 import logging
 import typing as t
 
 import toolz
 
-from commons_codec.model import SQLOperation, SQLParameterizedClause
+from commons_codec.model import (
+    SQLOperation,
+    SQLParameterizedSetClause,
+    SQLParameterizedWhereClause,
+)
 from commons_codec.vendor.boto3.dynamodb.types import DYNAMODB_CONTEXT, TypeDeserializer
 
 logger = logging.getLogger(__name__)
@@ -142,23 +144,24 @@ class DynamoDBCDCTranslator(DynamoTranslatorBase):
                 del new_image[key]
 
             record = self.decode_record(event["dynamodb"]["NewImage"])
-            clause = self.update_clause(record)
+            set_clause = self.update_clause(record)
 
             where_clause = self.keys_to_where(event["dynamodb"]["Keys"])
-            sql = f"UPDATE {self.table_name} SET {clause.set_clause} WHERE {where_clause};"
-            parameters = record
+            sql = f"UPDATE {self.table_name} SET {set_clause.to_sql()} WHERE {where_clause.to_sql()};"
+            parameters = set_clause.values  # noqa: PD011
+            parameters.update(where_clause.values)
 
         elif event_name == "REMOVE":
             where_clause = self.keys_to_where(event["dynamodb"]["Keys"])
-            sql = f"DELETE FROM {self.table_name} WHERE {where_clause};"
-            parameters = None
+            sql = f"DELETE FROM {self.table_name} WHERE {where_clause.to_sql()};"
+            parameters = where_clause.values  # noqa: PD011
 
         else:
             raise ValueError(f"Unknown CDC event name: {event_name}")
 
         return SQLOperation(sql, parameters)
 
-    def update_clause(self, record: t.Dict[str, t.Any]) -> SQLParameterizedClause:
+    def update_clause(self, record: t.Dict[str, t.Any]) -> SQLParameterizedSetClause:
         """
         Serializes an image to a comma-separated list of column/values pairs
         that can be used in the `SET` clause of an `UPDATE` statement.
@@ -170,24 +173,19 @@ class DynamoDBCDCTranslator(DynamoTranslatorBase):
         data['humidity'] = '84.84', data['temperature'] = '55.66'
         """
 
-        clause = SQLParameterizedClause()
+        clause = SQLParameterizedSetClause()
         for column, value in record.items():
-            param_name = f":{column}"
-            if value is None:
-                value = "NULL"
-
-            elif isinstance(value, dict):
-                param_name = f"CAST({param_name} AS OBJECT)"
+            rval = None
+            if isinstance(value, dict):
+                rval = f"CAST(:{column} AS OBJECT)"
 
             elif isinstance(value, list) and value and isinstance(value[0], dict):
-                param_name = f"CAST({param_name} AS OBJECT[])"
+                rval = f"CAST(:{column} AS OBJECT[])"
 
-            clause.columns.append(f"{self.DATA_COLUMN}['{column}']")
-            clause.names.append(param_name)
-            clause.values.append(value)  # noqa: PD011
+            clause.add(lval=f"{self.DATA_COLUMN}['{column}']", name=column, value=value, rval=rval)
         return clause
 
-    def keys_to_where(self, keys: t.Dict[str, t.Dict[str, str]]) -> str:
+    def keys_to_where(self, keys: t.Dict[str, t.Dict[str, str]]) -> SQLParameterizedWhereClause:
         """
         Serialize CDC event's "Keys" representation to an SQL `WHERE` clause in CrateDB SQL syntax.
 
@@ -200,10 +198,8 @@ class DynamoDBCDCTranslator(DynamoTranslatorBase):
         OUT:
         WHERE data['device'] = 'foo' AND data['timestamp'] = '2024-07-12T01:17:42'
         """
-        constraints: t.List[str] = []
-        for key_name, key_value_raw in keys.items():
-            key_value = self.deserializer.deserialize(key_value_raw)
-            # FIXME: Does the quoting of the value on the right hand side need to take the data type into account?
-            constraint = f"{self.DATA_COLUMN}['{key_name}'] = '{key_value}'"
-            constraints.append(constraint)
-        return " AND ".join(constraints)
+        keys = self.decode_record(keys)
+        clause = SQLParameterizedWhereClause()
+        for key_name, key_value in keys.items():
+            clause.add(lval=f"{self.DATA_COLUMN}['{key_name}']", name=key_name, value=key_value)
+        return clause

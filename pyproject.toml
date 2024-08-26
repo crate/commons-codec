@@ -204,6 +204,8 @@ lint.extend-ignore = [
   "RET505",
   # Probable insecure usage of temporary file or directory
   "S108",
+  # Possible SQL injection vector through string-based query construction
+  "S608",
 ]
 
 lint.per-file-ignores."examples/*" = [

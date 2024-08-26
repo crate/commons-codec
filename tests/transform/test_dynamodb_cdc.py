@@ -234,8 +234,10 @@ def test_decode_cdc_modify_basic():
         "data['humidity']=:humidity, data['temperature']=:temperature, data['location']=:location, "
         "data['string_set']=:string_set, data['number_set']=:number_set, data['binary_set']=:binary_set, "
         "data['empty_string']=:empty_string, data['null_string']=:null_string "
-        "WHERE data['device'] = 'foo' AND data['timestamp'] = '2024-07-12T01:17:42';",
+        "WHERE data['device']=:device AND data['timestamp']=:timestamp;",
         parameters={
+            "device": "foo",
+            "timestamp": "2024-07-12T01:17:42",
             "humidity": 84.84,
             "temperature": 55.66,
             "location": "Sydney",
@@ -254,8 +256,10 @@ def test_decode_cdc_modify_nested():
         "data['tags']=:tags, data['empty_map']=CAST(:empty_map AS OBJECT), data['empty_list']=:empty_list, "
         "data['string_set']=:string_set, data['number_set']=:number_set, data['binary_set']=:binary_set, "
         "data['somemap']=CAST(:somemap AS OBJECT), data['list_of_objects']=CAST(:list_of_objects AS OBJECT[]) "
-        "WHERE data['device'] = 'foo' AND data['timestamp'] = '2024-07-12T01:17:42';",
+        "WHERE data['device']=:device AND data['timestamp']=:timestamp;",
         parameters={
+            "device": "foo",
+            "timestamp": "2024-07-12T01:17:42",
             "tags": ["foo", "bar"],
             "empty_map": {},
             "empty_list": [],
@@ -270,8 +274,11 @@ def test_decode_cdc_modify_nested():
 
 def test_decode_cdc_remove():
     assert DynamoDBCDCTranslator(table_name="foo").to_sql(MSG_REMOVE) == SQLOperation(
-        statement="DELETE FROM \"foo\" WHERE data['device'] = 'bar' AND data['timestamp'] = '2024-07-12T01:17:42';",
-        parameters=None,
+        statement="DELETE FROM \"foo\" WHERE data['device']=:device AND data['timestamp']=:timestamp;",
+        parameters={
+            "device": "bar",
+            "timestamp": "2024-07-12T01:17:42",
+        },
     )
 
 

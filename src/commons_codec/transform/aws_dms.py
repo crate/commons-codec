@@ -1,7 +1,5 @@
-# Copyright (c) 2023-2024, The Kotori Developers and contributors.
+# Copyright (c) 2021-2024, Crate.io Inc.
 # Distributed under the terms of the LGPLv3 license, see LICENSE.
-
-# ruff: noqa: S608 FIXME: Possible SQL injection vector through string-based query construction
 
 import logging
 import typing as t
@@ -14,7 +12,8 @@ from commons_codec.model import (
     ColumnTypeMapStore,
     PrimaryKeyStore,
     SQLOperation,
-    SQLParameterizedClause,
+    SQLParameterizedSetClause,
+    SQLParameterizedWhereClause,
     TableAddress,
 )
 
@@ -31,15 +30,15 @@ class DMSTranslatorCrateDBRecord:
 
     def __init__(
         self,
-        record: t.Dict[str, t.Any],
+        event: t.Dict[str, t.Any],
         container: "DMSTranslatorCrateDB",
     ):
-        self.record = record
+        self.event = event
         self.container = container
 
-        self.metadata: t.Dict[str, t.Any] = self.record.get("metadata", {})
-        self.control: t.Dict[str, t.Any] = self.record.get("control", {})
-        self.data: t.Dict[str, t.Any] = self.record.get("data", {})
+        self.metadata: t.Dict[str, t.Any] = self.event.get("metadata", {})
+        self.control: t.Dict[str, t.Any] = self.event.get("control", {})
+        self.data: t.Dict[str, t.Any] = self.event.get("data", {})
 
         self.operation: t.Union[str, None] = self.metadata.get("operation")
 
@@ -82,30 +81,31 @@ class DMSTranslatorCrateDBRecord:
             return SQLOperation(f"CREATE TABLE IF NOT EXISTS {self.address.fqn} ({self.DATA_COLUMN} OBJECT(DYNAMIC));")
 
         elif self.operation in ["load", "insert"]:
-            record = self.record_to_values()
+            self.decode_data()
             sql = f"INSERT INTO {self.address.fqn} ({self.DATA_COLUMN}) VALUES (:record);"
-            parameters = {"record": record}
+            parameters = {"record": self.data}
 
         elif self.operation == "update":
-            record = self.record_to_values()
-            clause = self.update_clause()
+            self.decode_data()
+            set_clause = self.update_clause()
             where_clause = self.keys_to_where()
-            sql = f"UPDATE {self.address.fqn} SET {clause.set_clause} WHERE {where_clause};"
-            parameters = {"record": record}
+            sql = f"UPDATE {self.address.fqn} SET {set_clause.to_sql()} WHERE {where_clause.to_sql()};"
+            parameters = set_clause.values  # noqa: PD011
+            parameters.update(where_clause.values)
 
         elif self.operation == "delete":
             where_clause = self.keys_to_where()
-            sql = f"DELETE FROM {self.address.fqn} WHERE {where_clause};"
-            parameters = None
+            sql = f"DELETE FROM {self.address.fqn} WHERE {where_clause.to_sql()};"
+            parameters = where_clause.values  # noqa: PD011
 
         else:
             message = f"Unknown CDC event operation: {self.operation}"
             logger.warning(message)
-            raise UnknownOperationError(message, operation=self.operation, record=self.record)
+            raise UnknownOperationError(message, operation=self.operation, record=self.event)
 
         return SQLOperation(sql, parameters)
 
-    def update_clause(self) -> SQLParameterizedClause:
+    def update_clause(self) -> SQLParameterizedSetClause:
         """
         Serializes an image to a comma-separated list of column/values pairs
         that can be used in the `SET` clause of an `UPDATE` statement.
@@ -117,21 +117,15 @@ class DMSTranslatorCrateDBRecord:
         OUT
         data['age'] = '33', data['attributes'] = '{"foo": "bar"}', data['name'] = 'John'
         """
-        clause = SQLParameterizedClause()
-        for column, value in self.record["data"].items():
-            # Skip primary key columns, they cannot be updated
+        clause = SQLParameterizedSetClause()
+        for column, value in self.event["data"].items():
+            # Skip primary key columns, they cannot be updated.
             if column in self.primary_keys:
                 continue
-
-            param_name = f":{column}"
-
-            clause.columns.append(f"{self.DATA_COLUMN}['{column}']")
-            clause.names.append(param_name)
-            clause.values.append(value)  # noqa: PD011
-
+            clause.add(lval=f"{self.DATA_COLUMN}['{column}']", value=value, name=column)
         return clause
 
-    def record_to_values(self) -> t.Dict[str, t.Any]:
+    def decode_data(self):
         """
         Apply type translations to record, and serialize to JSON.
 
@@ -148,21 +142,18 @@ class DMSTranslatorCrateDBRecord:
                 if column_type is ColumnType.MAP and isinstance(value, str):
                     value = json.loads(value)
                 self.data[column_name] = value
-        return self.data
 
-    def keys_to_where(self) -> str:
+    def keys_to_where(self) -> SQLParameterizedWhereClause:
         """
         Produce an SQL WHERE clause based on primary key definition and current record's data.
         """
         if not self.primary_keys:
             raise ValueError("Unable to invoke DML operation without primary key information")
-        constraints: t.List[str] = []
+        clause = SQLParameterizedWhereClause()
         for key_name in self.primary_keys:
             key_value = self.data.get(key_name)
-            # FIXME: Does the quoting of the value on the right hand side need to take the data type into account?
-            constraint = f"{self.DATA_COLUMN}['{key_name}'] = '{key_value}'"
-            constraints.append(constraint)
-        return " AND ".join(constraints)
+            clause.add(lval=f"{self.DATA_COLUMN}['{key_name}']", value=key_value, name=key_name)
+        return clause
 
 
 class DMSTranslatorCrateDB:
@@ -188,5 +179,5 @@ class DMSTranslatorCrateDB:
         """
         Produce INSERT|UPDATE|DELETE SQL statement from load|insert|update|delete CDC event record.
         """
-        record_decoded = DMSTranslatorCrateDBRecord(record=record, container=self)
+        record_decoded = DMSTranslatorCrateDBRecord(event=record, container=self)
         return record_decoded.to_sql()

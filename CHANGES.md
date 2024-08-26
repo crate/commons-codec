@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- DMS/DynamoDB: Use parameterized SQL WHERE clauses instead of inlining values
 
 ## 2024/08/26 v0.0.12
 - DMS/DynamoDB/MongoDB: Use SQL with parameters instead of inlining values
