@@ -213,19 +213,19 @@ def test_decode_cdc_unknown_event(cdc):
 
 def test_decode_cdc_sql_ddl_regular(cdc):
     assert cdc.to_sql(MSG_CONTROL_CREATE_TABLE) == SQLOperation(
-        statement='CREATE TABLE IF NOT EXISTS "public"."foo" (data OBJECT(DYNAMIC));', parameters=None
+        statement="CREATE TABLE IF NOT EXISTS public.foo (data OBJECT(DYNAMIC));", parameters=None
     )
 
 
 def test_decode_cdc_sql_ddl_awsdms(cdc):
     assert cdc.to_sql(MSG_CONTROL_AWSDMS) == SQLOperation(
-        statement='CREATE TABLE IF NOT EXISTS "dms"."awsdms_apply_exceptions" (data OBJECT(DYNAMIC));', parameters=None
+        statement="CREATE TABLE IF NOT EXISTS dms.awsdms_apply_exceptions (data OBJECT(DYNAMIC));", parameters=None
     )
 
 
 def test_decode_cdc_insert(cdc):
     assert cdc.to_sql(MSG_DATA_INSERT) == SQLOperation(
-        statement='INSERT INTO "public"."foo" (data) VALUES (:record);', parameters={"record": RECORD_INSERT}
+        statement="INSERT INTO public.foo (data) VALUES (:record);", parameters={"record": RECORD_INSERT}
     )
 
 
@@ -238,7 +238,7 @@ def test_decode_cdc_update_success(cdc):
 
     # Emulate an UPDATE operation.
     assert cdc.to_sql(MSG_DATA_UPDATE_VALUE) == SQLOperation(
-        statement='UPDATE "public"."foo" SET '
+        statement="UPDATE public.foo SET "
         "data['age']=:age, data['attributes']=:attributes, data['name']=:name "
         "WHERE data['id']=:id;",
         parameters=RECORD_UPDATE,
@@ -267,7 +267,7 @@ def test_decode_cdc_delete_success(cdc):
 
     # Emulate a DELETE operation.
     assert cdc.to_sql(MSG_DATA_DELETE) == SQLOperation(
-        statement='DELETE FROM "public"."foo" WHERE data[\'id\']=:id;', parameters={"id": 45}
+        statement="DELETE FROM public.foo WHERE data['id']=:id;", parameters={"id": 45}
     )
 
 

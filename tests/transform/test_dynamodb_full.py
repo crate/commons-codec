@@ -35,14 +35,13 @@ RECORD_UTM = {
 
 def test_sql_ddl():
     assert (
-        DynamoDBFullLoadTranslator(table_name="foo").sql_ddl
-        == 'CREATE TABLE IF NOT EXISTS "foo" (data OBJECT(DYNAMIC));'
+        DynamoDBFullLoadTranslator(table_name="foo").sql_ddl == "CREATE TABLE IF NOT EXISTS foo (data OBJECT(DYNAMIC));"
     )
 
 
 def test_to_sql_all_types():
     assert DynamoDBFullLoadTranslator(table_name="foo").to_sql(RECORD_ALL_TYPES) == SQLOperation(
-        statement='INSERT INTO "foo" (data) VALUES (:record);',
+        statement="INSERT INTO foo (data) VALUES (:record);",
         parameters={
             "record": {
                 "id": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266",
@@ -59,7 +58,7 @@ def test_to_sql_all_types():
 
 def test_to_sql_list_of_objects():
     assert DynamoDBFullLoadTranslator(table_name="foo").to_sql(RECORD_UTM) == SQLOperation(
-        statement='INSERT INTO "foo" (data) VALUES (:record);',
+        statement="INSERT INTO foo (data) VALUES (:record);",
         parameters={
             "record": {
                 "utmTags": [

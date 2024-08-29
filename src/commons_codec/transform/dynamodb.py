@@ -5,6 +5,7 @@ import logging
 import typing as t
 
 import toolz
+from sqlalchemy_cratedb.support import quote_relation_name
 
 from commons_codec.model import (
     SQLOperation,
@@ -48,7 +49,7 @@ class DynamoTranslatorBase:
 
     def __init__(self, table_name: str):
         super().__init__()
-        self.table_name = self.quote_table_name(table_name)
+        self.table_name = quote_relation_name(table_name)
         self.deserializer = CrateDBTypeDeserializer()
 
     @property
@@ -57,17 +58,6 @@ class DynamoTranslatorBase:
         Define SQL DDL statement for creating table in CrateDB that stores re-materialized CDC events.
         """
         return f"CREATE TABLE IF NOT EXISTS {self.table_name} ({self.DATA_COLUMN} OBJECT(DYNAMIC));"
-
-    @staticmethod
-    def quote_table_name(name: str):
-        """
-        Poor man's table quoting.
-
-        TODO: Better use or vendorize canonical table quoting function from CrateDB Toolkit, when applicable.
-        """
-        if '"' not in name and "." not in name:
-            name = f'"{name}"'
-        return name
 
     def decode_record(self, item: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
         """

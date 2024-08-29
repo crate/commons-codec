@@ -96,7 +96,7 @@ MSG_INVALIDATE = {
 def test_decode_cdc_sql_ddl():
     assert (
         MongoDBCDCTranslatorCrateDB(table_name="foo").sql_ddl
-        == 'CREATE TABLE IF NOT EXISTS "foo" (oid TEXT, data OBJECT(DYNAMIC));'
+        == "CREATE TABLE IF NOT EXISTS foo (oid TEXT, data OBJECT(DYNAMIC));"
     )
 
 
@@ -120,7 +120,7 @@ def test_decode_cdc_optype_empty():
 
 def test_decode_cdc_insert():
     assert MongoDBCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_INSERT) == SQLOperation(
-        statement='INSERT INTO "foo" (oid, data) VALUES (:oid, :record);',
+        statement="INSERT INTO foo (oid, data) VALUES (:oid, :record);",
         parameters={
             "oid": "669683c2b0750b2c84893f3e",
             "record": {
@@ -135,7 +135,7 @@ def test_decode_cdc_insert():
 
 def test_decode_cdc_update():
     assert MongoDBCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_UPDATE) == SQLOperation(
-        statement="UPDATE \"foo\" SET data = :record WHERE oid = '669683c2b0750b2c84893f3e';",
+        statement="UPDATE foo SET data = :record WHERE oid = '669683c2b0750b2c84893f3e';",
         parameters={
             "record": {
                 "_id": {"$oid": "669683c2b0750b2c84893f3e"},
@@ -149,14 +149,14 @@ def test_decode_cdc_update():
 
 def test_decode_cdc_replace():
     assert MongoDBCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_REPLACE) == SQLOperation(
-        statement="UPDATE \"foo\" SET data = :record WHERE oid = '669683c2b0750b2c84893f3e';",
+        statement="UPDATE foo SET data = :record WHERE oid = '669683c2b0750b2c84893f3e';",
         parameters={"record": {"_id": {"$oid": "669683c2b0750b2c84893f3e"}, "tags": ["deleted"]}},
     )
 
 
 def test_decode_cdc_delete():
     assert MongoDBCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_DELETE) == SQLOperation(
-        statement="DELETE FROM \"foo\" WHERE oid = '669693c5002ef91ea9c7a562';", parameters=None
+        statement="DELETE FROM foo WHERE oid = '669693c5002ef91ea9c7a562';", parameters=None
     )
 
 

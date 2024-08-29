@@ -13,6 +13,7 @@ import sys
 
 import pymongo
 import sqlalchemy as sa
+from sqlalchemy_cratedb.support import quote_relation_name
 
 from commons_codec.transform.mongodb import MongoDBCDCTranslatorCrateDB
 
@@ -33,7 +34,7 @@ class MiniRelay:
         self.cratedb_client = sa.create_engine(cratedb_sqlalchemy_url, echo=True)
         self.mongodb_client = pymongo.MongoClient(mongodb_url)
         self.mongodb_collection = self.mongodb_client[mongodb_database][mongodb_collection]
-        self.table_name = cratedb_table
+        self.table_name = quote_relation_name(cratedb_table)
         self.cdc = MongoDBCDCTranslatorCrateDB(table_name=self.table_name)
 
     def start(self):
@@ -45,7 +46,7 @@ class MiniRelay:
             for sql in self.cdc_to_sql():
                 if sql:
                     connection.execute(sa.text(sql))
-                    connection.execute(sa.text(f"REFRESH TABLE {self.cdc.quote_table_name(self.table_name)};"))
+                    connection.execute(sa.text(f"REFRESH TABLE {self.table_name};"))
 
     def cdc_to_sql(self):
         """
