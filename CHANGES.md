@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- Replace poor man's relation name quoting with implementation
+  `quote_relation_name` from `sqlalchemy-cratedb` package.
 
 ## 2024/08/27 v0.0.13
 - DMS/DynamoDB: Use parameterized SQL WHERE clauses instead of inlining values

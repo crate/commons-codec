@@ -2,9 +2,11 @@ import json
 import sys
 import typing as t
 from enum import auto
+from functools import cached_property
 
 from attr import Factory
 from attrs import define
+from sqlalchemy_cratedb.support import quote_relation_name
 
 if sys.version_info >= (3, 11):
     from enum import StrEnum
@@ -17,22 +19,11 @@ class TableAddress:
     schema: str
     table: str
 
-    @property
+    @cached_property
     def fqn(self):
         if not self.schema:
             raise ValueError("Unable to compute a full-qualified table name without schema name")
-        return f"{self.quote_identifier(self.schema)}.{self.quote_identifier(self.table)}"
-
-    @staticmethod
-    def quote_identifier(name: str) -> str:
-        """
-        Poor man's table quoting.
-
-        TODO: Better use or vendorize canonical table quoting function from CrateDB Toolkit, when applicable.
-        """
-        if name and '"' not in name:
-            name = f'"{name}"'
-        return name
+        return quote_relation_name(f"{self.schema}.{self.table}")
 
 
 class ColumnType(StrEnum):

@@ -3,16 +3,21 @@ import pytest
 from commons_codec.model import ColumnType, ColumnTypeMapStore, TableAddress
 
 
-def test_table_address_success():
+def test_table_address_basic():
     ta = TableAddress(schema="foo", table="bar")
-    assert ta.fqn == '"foo"."bar"'
+    assert ta.fqn == "foo.bar"
+
+
+def test_table_address_quoting():
+    ta = TableAddress(schema="select", table="from")
+    assert ta.fqn == '"select"."from"'
 
 
 def test_table_address_failure():
     ta = TableAddress(schema=None, table="bar")
     with pytest.raises(ValueError) as ex:
         _ = ta.fqn
-        assert ex.match("adcdc")
+    assert ex.match("Unable to compute a full-qualified table name without schema name")
 
 
 def test_column_type_map_store_serialize():

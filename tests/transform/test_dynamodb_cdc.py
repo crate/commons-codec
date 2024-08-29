@@ -179,7 +179,7 @@ def test_decode_ddb_deserialize_type():
 
 
 def test_decode_cdc_sql_ddl():
-    assert DynamoDBCDCTranslator(table_name="foo").sql_ddl == 'CREATE TABLE IF NOT EXISTS "foo" (data OBJECT(DYNAMIC));'
+    assert DynamoDBCDCTranslator(table_name="foo").sql_ddl == "CREATE TABLE IF NOT EXISTS foo (data OBJECT(DYNAMIC));"
 
 
 def test_decode_cdc_unknown_source():
@@ -196,7 +196,7 @@ def test_decode_cdc_unknown_event():
 
 def test_decode_cdc_insert_basic():
     assert DynamoDBCDCTranslator(table_name="foo").to_sql(MSG_INSERT_BASIC) == SQLOperation(
-        statement='INSERT INTO "foo" (data) VALUES (:record);',
+        statement="INSERT INTO foo (data) VALUES (:record);",
         parameters={
             "record": {
                 "humidity": 84.84,
@@ -213,7 +213,7 @@ def test_decode_cdc_insert_basic():
 
 def test_decode_cdc_insert_nested():
     assert DynamoDBCDCTranslator(table_name="foo").to_sql(MSG_INSERT_NESTED) == SQLOperation(
-        statement='INSERT INTO "foo" (data) VALUES (:record);',
+        statement="INSERT INTO foo (data) VALUES (:record);",
         parameters={
             "record": {
                 "id": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266",
@@ -230,7 +230,7 @@ def test_decode_cdc_insert_nested():
 
 def test_decode_cdc_modify_basic():
     assert DynamoDBCDCTranslator(table_name="foo").to_sql(MSG_MODIFY_BASIC) == SQLOperation(
-        statement='UPDATE "foo" SET '
+        statement="UPDATE foo SET "
         "data['humidity']=:humidity, data['temperature']=:temperature, data['location']=:location, "
         "data['string_set']=:string_set, data['number_set']=:number_set, data['binary_set']=:binary_set, "
         "data['empty_string']=:empty_string, data['null_string']=:null_string "
@@ -252,7 +252,7 @@ def test_decode_cdc_modify_basic():
 
 def test_decode_cdc_modify_nested():
     assert DynamoDBCDCTranslator(table_name="foo").to_sql(MSG_MODIFY_NESTED) == SQLOperation(
-        statement='UPDATE "foo" SET '
+        statement="UPDATE foo SET "
         "data['tags']=:tags, data['empty_map']=CAST(:empty_map AS OBJECT), data['empty_list']=:empty_list, "
         "data['string_set']=:string_set, data['number_set']=:number_set, data['binary_set']=:binary_set, "
         "data['somemap']=CAST(:somemap AS OBJECT), data['list_of_objects']=CAST(:list_of_objects AS OBJECT[]) "
@@ -274,7 +274,7 @@ def test_decode_cdc_modify_nested():
 
 def test_decode_cdc_remove():
     assert DynamoDBCDCTranslator(table_name="foo").to_sql(MSG_REMOVE) == SQLOperation(
-        statement="DELETE FROM \"foo\" WHERE data['device']=:device AND data['timestamp']=:timestamp;",
+        statement="DELETE FROM foo WHERE data['device']=:device AND data['timestamp']=:timestamp;",
         parameters={
             "device": "bar",
             "timestamp": "2024-07-12T01:17:42",
