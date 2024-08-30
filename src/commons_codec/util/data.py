@@ -30,3 +30,15 @@ def is_number(s):
         pass
 
     return False
+
+
+class TaggableList(list):
+    """
+    Just like a list, but with some extra methods to be able to add meta-information.
+    """
+
+    def set_tag(self, key, value):
+        setattr(self, f"__{key}__", value)
+
+    def get_tag(self, key, default):
+        return getattr(self, f"__{key}__", default)

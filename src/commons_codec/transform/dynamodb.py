@@ -8,10 +8,12 @@ import toolz
 from sqlalchemy_cratedb.support import quote_relation_name
 
 from commons_codec.model import (
+    DualRecord,
     SQLOperation,
     SQLParameterizedSetClause,
     SQLParameterizedWhereClause,
 )
+from commons_codec.util.data import TaggableList
 from commons_codec.vendor.boto3.dynamodb.types import DYNAMODB_CONTEXT, TypeDeserializer
 
 logger = logging.getLogger(__name__)
@@ -38,14 +40,45 @@ class CrateDBTypeDeserializer(TypeDeserializer):
     def _deserialize_bs(self, value):
         return list(super()._deserialize_bs(value))
 
+    def _deserialize_l(self, value):
+        """
+        CrateDB can't store varied lists in an OBJECT(DYNAMIC) column, so set the
+        stage to break them apart in order to store them in an OBJECT(IGNORED) column.
+
+        https://github.com/crate/commons-codec/issues/28
+        """
+
+        # Deserialize list as-is.
+        result = TaggableList([self.deserialize(v) for v in value])
+        result.set_tag("varied", False)
+
+        # If it's not an empty list, check if inner types are varying.
+        # If so, tag the result list accordingly.
+        # It doesn't work on the result list itself, but on the DynamoDB
+        # data structure instead, comparing the single/dual-letter type
+        # identifiers.
+        if value:
+            dynamodb_type_first = list(value[0].keys())[0]
+            for v in value:
+                dynamodb_type_current = list(v.keys())[0]
+                if dynamodb_type_current != dynamodb_type_first:
+                    result.set_tag("varied", True)
+                    break
+        return result
+
 
 class DynamoTranslatorBase:
     """
-    Translate DynamoDB CDC events into different representations.
+    Translate DynamoDB records into a different representation.
     """
 
-    # Define name of the column where CDC's record data will get materialized into.
-    DATA_COLUMN = "data"
+    # Define name of the column where typed DynamoDB fields will get materialized into.
+    # This column uses the `OBJECT(DYNAMIC)` data type.
+    TYPED_COLUMN = "data"
+
+    # Define name of the column where untyped DynamoDB fields will get materialized into.
+    # This column uses the `OBJECT(IGNORED)` data type.
+    UNTYPED_COLUMN = "aux"
 
     def __init__(self, table_name: str):
         super().__init__()
@@ -57,9 +90,12 @@ class DynamoTranslatorBase:
         """`
         Define SQL DDL statement for creating table in CrateDB that stores re-materialized CDC events.
         """
-        return f"CREATE TABLE IF NOT EXISTS {self.table_name} ({self.DATA_COLUMN} OBJECT(DYNAMIC));"
+        return (
+            f"CREATE TABLE IF NOT EXISTS {self.table_name} "
+            f"({self.TYPED_COLUMN} OBJECT(DYNAMIC), {self.UNTYPED_COLUMN} OBJECT(IGNORED));"
+        )
 
-    def decode_record(self, item: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
+    def decode_record(self, item: t.Dict[str, t.Any]) -> DualRecord:
         """
         Deserialize DynamoDB JSON record into vanilla Python.
 
@@ -86,7 +122,13 @@ class DynamoTranslatorBase:
 
         -- https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypeDescriptors
         """
-        return toolz.valmap(self.deserializer.deserialize, item)
+        record = toolz.valmap(self.deserializer.deserialize, item)
+        untyped = {}
+        for key, value in record.items():
+            if isinstance(value, TaggableList) and value.get_tag("varied", False):
+                untyped[key] = value
+        record = toolz.dissoc(record, *untyped.keys())
+        return DualRecord(typed=record, untyped=untyped)
 
 
 class DynamoDBFullLoadTranslator(DynamoTranslatorBase):
@@ -94,9 +136,9 @@ class DynamoDBFullLoadTranslator(DynamoTranslatorBase):
         """
         Produce INSERT|UPDATE|DELETE SQL statement from INSERT|MODIFY|REMOVE CDC event record.
         """
-        record = self.decode_record(record)
-        sql = f"INSERT INTO {self.table_name} ({self.DATA_COLUMN}) VALUES (:record);"
-        return SQLOperation(sql, {"record": record})
+        dual_record = self.decode_record(record)
+        sql = f"INSERT INTO {self.table_name} ({self.TYPED_COLUMN}, {self.UNTYPED_COLUMN}) VALUES (:typed, :untyped);"
+        return SQLOperation(sql, {"typed": dual_record.typed, "untyped": dual_record.untyped})
 
 
 class DynamoDBCDCTranslator(DynamoTranslatorBase):
@@ -121,9 +163,11 @@ class DynamoDBCDCTranslator(DynamoTranslatorBase):
             raise ValueError(f"Unknown eventSource: {event_source}")
 
         if event_name == "INSERT":
-            record = self.decode_record(event["dynamodb"]["NewImage"])
-            sql = f"INSERT INTO {self.table_name} ({self.DATA_COLUMN}) VALUES (:record);"
-            parameters = {"record": record}
+            dual_record = self.decode_record(event["dynamodb"]["NewImage"])
+            sql = (
+                f"INSERT INTO {self.table_name} ({self.TYPED_COLUMN}, {self.UNTYPED_COLUMN}) VALUES (:typed, :untyped);"
+            )
+            parameters = {"typed": dual_record.typed, "untyped": dual_record.untyped}
 
         elif event_name == "MODIFY":
             new_image = event["dynamodb"]["NewImage"]
@@ -133,8 +177,8 @@ class DynamoDBCDCTranslator(DynamoTranslatorBase):
             for key in event["dynamodb"]["Keys"]:
                 del new_image[key]
 
-            record = self.decode_record(event["dynamodb"]["NewImage"])
-            set_clause = self.update_clause(record)
+            dual_record = self.decode_record(event["dynamodb"]["NewImage"])
+            set_clause = self.update_clause(dual_record)
 
             where_clause = self.keys_to_where(event["dynamodb"]["Keys"])
             sql = f"UPDATE {self.table_name} SET {set_clause.to_sql()} WHERE {where_clause.to_sql()};"
@@ -151,7 +195,7 @@ class DynamoDBCDCTranslator(DynamoTranslatorBase):
 
         return SQLOperation(sql, parameters)
 
-    def update_clause(self, record: t.Dict[str, t.Any]) -> SQLParameterizedSetClause:
+    def update_clause(self, dual_record: DualRecord) -> SQLParameterizedSetClause:
         """
         Serializes an image to a comma-separated list of column/values pairs
         that can be used in the `SET` clause of an `UPDATE` statement.
@@ -164,6 +208,12 @@ class DynamoDBCDCTranslator(DynamoTranslatorBase):
         """
 
         clause = SQLParameterizedSetClause()
+        self.record_to_set_clause(dual_record.typed, self.TYPED_COLUMN, clause)
+        self.record_to_set_clause(dual_record.untyped, self.UNTYPED_COLUMN, clause)
+        return clause
+
+    @staticmethod
+    def record_to_set_clause(record: t.Dict[str, t.Any], container_column: str, clause: SQLParameterizedSetClause):
         for column, value in record.items():
             rval = None
             if isinstance(value, dict):
@@ -172,8 +222,7 @@ class DynamoDBCDCTranslator(DynamoTranslatorBase):
             elif isinstance(value, list) and value and isinstance(value[0], dict):
                 rval = f"CAST(:{column} AS OBJECT[])"
 
-            clause.add(lval=f"{self.DATA_COLUMN}['{column}']", name=column, value=value, rval=rval)
-        return clause
+            clause.add(lval=f"{container_column}['{column}']", name=column, value=value, rval=rval)
 
     def keys_to_where(self, keys: t.Dict[str, t.Dict[str, str]]) -> SQLParameterizedWhereClause:
         """
@@ -188,8 +237,8 @@ class DynamoDBCDCTranslator(DynamoTranslatorBase):
         OUT:
         WHERE data['device'] = 'foo' AND data['timestamp'] = '2024-07-12T01:17:42'
         """
-        keys = self.decode_record(keys)
+        dual_record = self.decode_record(keys)
         clause = SQLParameterizedWhereClause()
-        for key_name, key_value in keys.items():
-            clause.add(lval=f"{self.DATA_COLUMN}['{key_name}']", name=key_name, value=key_value)
+        for key_name, key_value in dual_record.typed.items():
+            clause.add(lval=f"{self.TYPED_COLUMN}['{key_name}']", name=key_name, value=key_value)
         return clause

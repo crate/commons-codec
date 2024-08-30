@@ -14,6 +14,7 @@ RECORD_ALL_TYPES = {
             "test2": {"N": 2},
         }
     },
+    "list_varied": {"L": [{"M": {"a": {"N": 1}}}, {"N": 2}, {"S": "Three"}]},
 }
 
 RECORD_UTM = {
@@ -35,15 +36,16 @@ RECORD_UTM = {
 
 def test_sql_ddl():
     assert (
-        DynamoDBFullLoadTranslator(table_name="foo").sql_ddl == "CREATE TABLE IF NOT EXISTS foo (data OBJECT(DYNAMIC));"
+        DynamoDBFullLoadTranslator(table_name="foo").sql_ddl
+        == "CREATE TABLE IF NOT EXISTS foo (data OBJECT(DYNAMIC), aux OBJECT(IGNORED));"
     )
 
 
 def test_to_sql_all_types():
     assert DynamoDBFullLoadTranslator(table_name="foo").to_sql(RECORD_ALL_TYPES) == SQLOperation(
-        statement="INSERT INTO foo (data) VALUES (:record);",
+        statement="INSERT INTO foo (data, aux) VALUES (:typed, :untyped);",
         parameters={
-            "record": {
+            "typed": {
                 "id": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266",
                 "data": {"temperature": 42.42, "humidity": 84.84},
                 "meta": {"timestamp": "2024-07-12T01:17:42", "device": "foo"},
@@ -51,16 +53,23 @@ def test_to_sql_all_types():
                 "number_set": [0.34, 1.0, 2.0, 3.0],
                 "binary_set": ["U3Vubnk="],
                 "somemap": {"test": 1.0, "test2": 2.0},
-            }
+            },
+            "untyped": {
+                "list_varied": [
+                    {"a": 1.0},
+                    2.0,
+                    "Three",
+                ],
+            },
         },
     )
 
 
 def test_to_sql_list_of_objects():
     assert DynamoDBFullLoadTranslator(table_name="foo").to_sql(RECORD_UTM) == SQLOperation(
-        statement="INSERT INTO foo (data) VALUES (:record);",
+        statement="INSERT INTO foo (data, aux) VALUES (:typed, :untyped);",
         parameters={
-            "record": {
+            "typed": {
                 "utmTags": [
                     {
                         "date": "2024-08-28T20:05:42.603Z",
@@ -70,6 +79,7 @@ def test_to_sql_list_of_objects():
                         "utm_source": "google",
                     }
                 ]
-            }
+            },
+            "untyped": {},
         },
     )

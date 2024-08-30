@@ -3,6 +3,8 @@
 ## Unreleased
 - Replace poor man's relation name quoting with implementation
   `quote_relation_name` from `sqlalchemy-cratedb` package.
+- DynamoDB: Add special decoding for varied lists, storing them into a separate
+  `OBJECT(IGNORED)` column in CrateDB
 
 ## 2024/08/27 v0.0.13
 - DMS/DynamoDB: Use parameterized SQL WHERE clauses instead of inlining values

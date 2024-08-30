@@ -128,3 +128,14 @@ class SQLParameterizedWhereClause(SQLParameterizedClause):
         Render a WHERE clause of an SQL statement.
         """
         return self.render(" AND ")
+
+
+@define
+class DualRecord:
+    """
+    Manage two halves of a record.
+    One bucket stores the typed fields, the other stores the untyped ones.
+    """
+
+    typed: t.Dict[str, t.Any]
+    untyped: t.Dict[str, t.Any]

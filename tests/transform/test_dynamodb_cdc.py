@@ -3,7 +3,7 @@ from decimal import Decimal
 
 import pytest
 
-from commons_codec.model import SQLOperation
+from commons_codec.model import DualRecord, SQLOperation
 from commons_codec.transform.dynamodb import CrateDBTypeDeserializer, DynamoDBCDCTranslator
 
 READING_BASIC = {"device": "foo", "temperature": 42.42, "humidity": 84.84}
@@ -175,11 +175,16 @@ MSG_REMOVE = {
 
 
 def test_decode_ddb_deserialize_type():
-    assert DynamoDBCDCTranslator(table_name="foo").decode_record({"foo": {"N": "84.84"}}) == {"foo": 84.84}
+    assert DynamoDBCDCTranslator(table_name="foo").decode_record({"foo": {"N": "84.84"}}) == DualRecord(
+        typed={"foo": 84.84}, untyped={}
+    )
 
 
 def test_decode_cdc_sql_ddl():
-    assert DynamoDBCDCTranslator(table_name="foo").sql_ddl == "CREATE TABLE IF NOT EXISTS foo (data OBJECT(DYNAMIC));"
+    assert (
+        DynamoDBCDCTranslator(table_name="foo").sql_ddl
+        == "CREATE TABLE IF NOT EXISTS foo (data OBJECT(DYNAMIC), aux OBJECT(IGNORED));"
+    )
 
 
 def test_decode_cdc_unknown_source():
@@ -196,9 +201,9 @@ def test_decode_cdc_unknown_event():
 
 def test_decode_cdc_insert_basic():
     assert DynamoDBCDCTranslator(table_name="foo").to_sql(MSG_INSERT_BASIC) == SQLOperation(
-        statement="INSERT INTO foo (data) VALUES (:record);",
+        statement="INSERT INTO foo (data, aux) VALUES (:typed, :untyped);",
         parameters={
-            "record": {
+            "typed": {
                 "humidity": 84.84,
                 "temperature": 42.42,
                 "device": "foo",
@@ -206,16 +211,17 @@ def test_decode_cdc_insert_basic():
                 "string_set": ["location_1"],
                 "number_set": [1.0, 2.0, 3.0, 4.0],
                 "binary_set": ["U3Vubnk="],
-            }
+            },
+            "untyped": {},
         },
     )
 
 
 def test_decode_cdc_insert_nested():
     assert DynamoDBCDCTranslator(table_name="foo").to_sql(MSG_INSERT_NESTED) == SQLOperation(
-        statement="INSERT INTO foo (data) VALUES (:record);",
+        statement="INSERT INTO foo (data, aux) VALUES (:typed, :untyped);",
         parameters={
-            "record": {
+            "typed": {
                 "id": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266",
                 "data": {"temperature": 42.42, "humidity": 84.84},
                 "meta": {"timestamp": "2024-07-12T01:17:42", "device": "foo"},
@@ -223,7 +229,8 @@ def test_decode_cdc_insert_nested():
                 "number_set": [0.34, 1.0, 2.0, 3.0],
                 "binary_set": ["U3Vubnk="],
                 "somemap": {"test": 1.0, "test2": 2.0},
-            }
+            },
+            "untyped": {},
         },
     )
 
