@@ -139,3 +139,6 @@ class DualRecord:
 
     typed: t.Dict[str, t.Any]
     untyped: t.Dict[str, t.Any]
+
+    def to_dict(self):
+        return {"typed": self.typed, "untyped": self.untyped}

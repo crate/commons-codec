@@ -5,6 +5,7 @@
   `quote_relation_name` from `sqlalchemy-cratedb` package.
 - DynamoDB: Add special decoding for varied lists, storing them into a separate
   `OBJECT(IGNORED)` column in CrateDB
+- DynamoDB: Improve `to_sql()` to accept list of records
 
 ## 2024/08/27 v0.0.13
 - DMS/DynamoDB: Use parameterized SQL WHERE clauses instead of inlining values
