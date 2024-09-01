@@ -89,10 +89,12 @@ def test_to_sql_operation():
     """
     assert DynamoDBFullLoadTranslator(table_name="foo").to_sql(RECORD_IN) == SQLOperation(
         statement="INSERT INTO foo (data, aux) VALUES (:typed, :untyped);",
-        parameters={
-            "typed": RECORD_OUT_DATA,
-            "untyped": RECORD_OUT_AUX,
-        },
+        parameters=[
+            {
+                "typed": RECORD_OUT_DATA,
+                "untyped": RECORD_OUT_AUX,
+            }
+        ],
     )
 
 
@@ -103,7 +105,7 @@ def test_to_sql_cratedb(caplog, cratedb):
 
     # Compute CrateDB operation (SQL+parameters) from DynamoDB record.
     translator = DynamoDBFullLoadTranslator(table_name="from.dynamodb")
-    operation = translator.to_sql(record=RECORD_IN)
+    operation = translator.to_sql(RECORD_IN)
 
     # Insert into CrateDB.
     cratedb.database.run_sql(translator.sql_ddl)

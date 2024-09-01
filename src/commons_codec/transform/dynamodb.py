@@ -23,6 +23,8 @@ DYNAMODB_CONTEXT.traps[decimal.Inexact] = False
 # Inhibit Rounded Exceptions
 DYNAMODB_CONTEXT.traps[decimal.Rounded] = False
 
+RecordType = t.Dict[str, t.Any]
+
 
 class CrateDBTypeDeserializer(TypeDeserializer):
     def _deserialize_n(self, value):
@@ -132,13 +134,15 @@ class DynamoTranslatorBase:
 
 
 class DynamoDBFullLoadTranslator(DynamoTranslatorBase):
-    def to_sql(self, record: t.Dict[str, t.Any]) -> SQLOperation:
+    def to_sql(self, data: t.Union[RecordType, t.List[RecordType]]) -> SQLOperation:
         """
-        Produce INSERT|UPDATE|DELETE SQL statement from INSERT|MODIFY|REMOVE CDC event record.
+        Produce INSERT SQL operations (SQL statement and parameters) from DynamoDB record(s).
         """
-        dual_record = self.decode_record(record)
         sql = f"INSERT INTO {self.table_name} ({self.TYPED_COLUMN}, {self.UNTYPED_COLUMN}) VALUES (:typed, :untyped);"
-        return SQLOperation(sql, {"typed": dual_record.typed, "untyped": dual_record.untyped})
+        if not isinstance(data, list):
+            data = [data]
+        parameters = [self.decode_record(record).to_dict() for record in data]
+        return SQLOperation(sql, parameters)
 
 
 class DynamoDBCDCTranslator(DynamoTranslatorBase):
