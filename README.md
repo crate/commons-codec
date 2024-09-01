@@ -1,7 +1,7 @@
 # commons-codec
 
-[![Tests](https://github.com/daq-tools/commons-codec/actions/workflows/tests.yml/badge.svg)](https://github.com/daq-tools/commons-codec/actions/workflows/tests.yml)
-[![Coverage](https://codecov.io/gh/daq-tools/commons-codec/branch/main/graph/badge.svg)](https://app.codecov.io/gh/daq-tools/commons-codec)
+[![Tests](https://github.com/crate/commons-codec/actions/workflows/tests.yml/badge.svg)](https://github.com/crate/commons-codec/actions/workflows/tests.yml)
+[![Coverage](https://codecov.io/gh/crate/commons-codec/branch/main/graph/badge.svg)](https://app.codecov.io/gh/crate/commons-codec)
 [![Build status (documentation)](https://readthedocs.org/projects/commons-codec/badge/)](https://cratedb.com/docs/commons-codec/)
 [![PyPI Version](https://img.shields.io/pypi/v/commons-codec.svg)](https://pypi.org/project/commons-codec/)
 [![Python Version](https://img.shields.io/pypi/pyversions/commons-codec.svg)](https://pypi.org/project/commons-codec/)
@@ -75,8 +75,8 @@ within the header sections of relevant files.
 [commons-codec]: https://pypi.org/project/commons-codec/
 [Zyp research]: https://commons-codec.readthedocs.io/zyp/research.html
 [documentation]: https://commons-codec.readthedocs.io/
-[examples]: https://github.com/daq-tools/commons-codec/tree/main/examples
-[managed on GitHub]: https://github.com/daq-tools/commons-codec
+[examples]: https://github.com/crate/commons-codec/tree/main/examples
+[managed on GitHub]: https://github.com/crate/commons-codec
 [prior art]: https://commons-codec.readthedocs.io/prior-art.html
 [PyPI]: https://pypi.org/
 [Zyp]: https://commons-codec.readthedocs.io/zyp/
