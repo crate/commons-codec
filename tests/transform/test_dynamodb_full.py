@@ -1,7 +1,11 @@
+import pytest
+
 from commons_codec.model import SQLOperation
 from commons_codec.transform.dynamodb import DynamoDBFullLoadTranslator
 
-RECORD_ALL_TYPES = {
+pytestmark = pytest.mark.dynamodb
+
+RECORD_IN = {
     "id": {"S": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266"},
     "data": {"M": {"temperature": {"N": "42.42"}, "humidity": {"N": "84.84"}}},
     "meta": {"M": {"timestamp": {"S": "2024-07-12T01:17:42"}, "device": {"S": "foo"}}},
@@ -37,6 +41,40 @@ RECORD_ALL_TYPES = {
     "set_of_strings": {"SS": ["location_1"]},
 }
 
+RECORD_OUT_DATA = {
+    "id": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266",
+    "data": {"temperature": 42.42, "humidity": 84.84},
+    "meta": {"timestamp": "2024-07-12T01:17:42", "device": "foo"},
+    "location": {
+        "address": "Berchtesgaden Salt Mine",
+        "coordinates": [
+            "",
+        ],
+        "meetingPoint": "At the end of the tunnel",
+    },
+    "list_of_objects": [
+        {
+            "date": "2024-08-28T20:05:42.603Z",
+            "utm_adgroup": ["", ""],
+            "utm_campaign": "34374686341",
+            "utm_medium": "foobar",
+            "utm_source": "google",
+        }
+    ],
+    "map_of_numbers": {"test": 1.0, "test2": 2.0},
+    "set_of_binaries": ["U3Vubnk="],
+    "set_of_numbers": [0.34, 1.0, 2.0, 3.0],
+    "set_of_strings": ["location_1"],
+}
+
+RECORD_OUT_AUX = {
+    "list_of_varied": [
+        {"a": 1.0},
+        2.0,
+        "Three",
+    ],
+}
+
 
 def test_sql_ddl():
     assert (
@@ -45,41 +83,37 @@ def test_sql_ddl():
     )
 
 
-def test_to_sql_all_types():
-    assert DynamoDBFullLoadTranslator(table_name="foo").to_sql(RECORD_ALL_TYPES) == SQLOperation(
+def test_to_sql_operation():
+    """
+    Verify outcome of `DynamoDBFullLoadTranslator.to_sql` operation.
+    """
+    assert DynamoDBFullLoadTranslator(table_name="foo").to_sql(RECORD_IN) == SQLOperation(
         statement="INSERT INTO foo (data, aux) VALUES (:typed, :untyped);",
         parameters={
-            "typed": {
-                "id": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266",
-                "data": {"temperature": 42.42, "humidity": 84.84},
-                "meta": {"timestamp": "2024-07-12T01:17:42", "device": "foo"},
-                "location": {
-                    "address": "Berchtesgaden Salt Mine",
-                    "coordinates": [
-                        "",
-                    ],
-                    "meetingPoint": "At the end of the tunnel",
-                },
-                "list_of_objects": [
-                    {
-                        "date": "2024-08-28T20:05:42.603Z",
-                        "utm_adgroup": ["", ""],
-                        "utm_campaign": "34374686341",
-                        "utm_medium": "foobar",
-                        "utm_source": "google",
-                    }
-                ],
-                "map_of_numbers": {"test": 1.0, "test2": 2.0},
-                "set_of_binaries": ["U3Vubnk="],
-                "set_of_numbers": [0.34, 1.0, 2.0, 3.0],
-                "set_of_strings": ["location_1"],
-            },
-            "untyped": {
-                "list_of_varied": [
-                    {"a": 1.0},
-                    2.0,
-                    "Three",
-                ],
-            },
+            "typed": RECORD_OUT_DATA,
+            "untyped": RECORD_OUT_AUX,
         },
     )
+
+
+def test_to_sql_cratedb(caplog, cratedb):
+    """
+    Verify writing converted DynamoDB record to CrateDB.
+    """
+
+    # Compute CrateDB operation (SQL+parameters) from DynamoDB record.
+    translator = DynamoDBFullLoadTranslator(table_name="from.dynamodb")
+    operation = translator.to_sql(record=RECORD_IN)
+
+    # Insert into CrateDB.
+    cratedb.database.run_sql(translator.sql_ddl)
+    cratedb.database.run_sql(operation.statement, operation.parameters)
+
+    # Verify data in target database.
+    assert cratedb.database.table_exists("from.dynamodb") is True
+    assert cratedb.database.refresh_table("from.dynamodb") is True
+    assert cratedb.database.count_records("from.dynamodb") == 1
+
+    results = cratedb.database.run_sql('SELECT * FROM "from".dynamodb;', records=True)  # noqa: S608
+    assert results[0]["data"] == RECORD_OUT_DATA
+    assert results[0]["aux"] == RECORD_OUT_AUX

@@ -17,6 +17,8 @@ import pytest
 
 from commons_codec.vendor.boto3.dynamodb.types import Binary, TypeDeserializer
 
+pytestmark = pytest.mark.dynamodb
+
 
 class TestBinary(unittest.TestCase):
     def test_bytes_input(self):

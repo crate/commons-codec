@@ -1,12 +1,17 @@
 # Development Sandbox
 
-Acquire source code, install development sandbox, and invoke software tests.
+Acquire source code, and install development sandbox.
 ```shell
 git clone https://github.com/daq-tools/commons-codec
 cd commons-codec
 python3 -m venv .venv
 source .venv/bin/activate
 pip install --editable='.[all,develop,doc,test]'
+```
+
+Invoke software tests.
+```
+export TC_KEEPALIVE=true
 poe check
 ```
 

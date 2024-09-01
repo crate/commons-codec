@@ -1,8 +1,12 @@
 import unittest
 from decimal import Decimal
 
+import pytest
+
 from commons_codec.model import DualRecord
 from commons_codec.transform.dynamodb import CrateDBTypeDeserializer, DynamoDBCDCTranslator
+
+pytestmark = pytest.mark.dynamodb
 
 
 class TestDeserializer(unittest.TestCase):
