@@ -6,6 +6,9 @@ import pytest
 from commons_codec.model import DualRecord, SQLOperation
 from commons_codec.transform.dynamodb import CrateDBTypeDeserializer, DynamoDBCDCTranslator
 
+pytestmark = pytest.mark.dynamodb
+
+
 READING_BASIC = {"device": "foo", "temperature": 42.42, "humidity": 84.84}
 
 MSG_UNKNOWN_SOURCE = {

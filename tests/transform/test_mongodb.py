@@ -1,7 +1,9 @@
 # ruff: noqa: E402, E501
-import datetime
-
 import pytest
+
+pytestmark = pytest.mark.mongodb
+
+import datetime
 
 from commons_codec.model import SQLOperation
 

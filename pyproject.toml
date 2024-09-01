@@ -138,6 +138,7 @@ optional-dependencies.release = [
   "twine<6",
 ]
 optional-dependencies.test = [
+  "cratedb-toolkit[testing]",
   "pytest<9",
   "pytest-cov<6",
   "pytest-mock<4",
@@ -245,6 +246,8 @@ python_files = [
 ]
 xfail_strict = true
 markers = [
+  "dynamodb",
+  "mongodb",
   "tasmota",
   "wemos",
 ]
@@ -329,6 +332,12 @@ release = [
   { cmd = "twine upload --skip-existing dist/*" },
 ]
 
-test = [
-  { cmd = "pytest" },
-]
+[tool.poe.tasks.test]
+cmd = "pytest"
+help = "Invoke software tests"
+
+[tool.poe.tasks.test.args.expression]
+options = [ "-k" ]
+
+[tool.poe.tasks.test.args.marker]
+options = [ "-m" ]

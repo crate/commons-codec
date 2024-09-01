@@ -52,7 +52,9 @@ jobs:
           pip install --use-pep517 --prefer-binary --editable=.[develop,test]
 
       - name: Run linters and software tests
-        run: poe check
+        run: |
+          poe lint
+          poe test -- -m 'not (dynamodb or mongodb)'
 
       # https://github.com/codecov/codecov-action
       - name: Upload coverage results to Codecov
@@ -62,6 +64,61 @@ jobs:
         with:
           files: ./coverage.xml
           flags: vanilla
+          env_vars: OS,PYTHON
+          name: codecov-umbrella
+          fail_ci_if_error: true
+
+
+  test-dynamodb:
+    name: "
+    DynamoDB: Python ${{ matrix.python-version }}
+    "
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['ubuntu-latest']
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+
+    env:
+      OS: ${{ matrix.os }}
+      PYTHON: ${{ matrix.python-version }}
+
+    steps:
+
+      - name: Acquire sources
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
+          cache: 'pip'
+          cache-dependency-path:
+            pyproject.toml
+
+      - name: Set up project
+        run: |
+
+          # `setuptools 0.64.0` adds support for editable install hooks (PEP 660).
+          # https://github.com/pypa/setuptools/blob/main/CHANGES.rst#v6400
+          pip install "setuptools>=64" --upgrade
+
+          # Install package in editable mode.
+          pip install --use-pep517 --prefer-binary --editable=.[mongodb,develop,test]
+
+      - name: Run linters and software tests
+        run: poe test -- -m 'dynamodb'
+
+      # https://github.com/codecov/codecov-action
+      - name: Upload coverage results to Codecov
+        uses: codecov/codecov-action@v4
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          files: ./coverage.xml
+          flags: dynamodb
           env_vars: OS,PYTHON
           name: codecov-umbrella
           fail_ci_if_error: true
@@ -107,7 +164,7 @@ jobs:
           pip install --use-pep517 --prefer-binary --editable=.[mongodb,develop,test]
 
       - name: Run linters and software tests
-        run: poe check
+        run: poe test -- -m 'mongodb'
 
       # https://github.com/codecov/codecov-action
       - name: Upload coverage results to Codecov
