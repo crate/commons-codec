@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## 2024/09/02 v0.0.14
 - Replace poor man's relation name quoting with implementation
   `quote_relation_name` from `sqlalchemy-cratedb` package.
 - DynamoDB: Add special decoding for varied lists, storing them into a separate
