@@ -106,7 +106,7 @@ dynamic = [
 dependencies = [
   "attrs<25",
   "backports-strenum<1.3; python_version<'3.11'",
-  "cattrs<24",
+  "cattrs<25",
   "simplejson<4",
   "sqlalchemy-cratedb>=0.39.0",
   "toolz<0.13",
