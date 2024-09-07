@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Added Zyp Treatments, a slightly tailored transformation subsystem
 
 ## 2024/09/02 v0.0.14
 - Replace poor man's relation name quoting with implementation
@@ -41,7 +42,7 @@
   column. This allows defining primary keys on the sink table.
 
 ## 2024/08/14 v0.0.4
-- Added `BucketTransformation`, a minimal transformation engine
+- Added Zyp Transformations, a minimal transformation engine
   based on JSON Pointer (RFC 6901).
 - Added documentation using Sphinx and Read the Docs
 

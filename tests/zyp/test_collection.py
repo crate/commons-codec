@@ -86,18 +86,31 @@ def test_collection_transformation_serialize():
     }
     dict_result = transformation.to_dict()
     assert dict_result == transformation_dict
-    return
 
     yaml_result = transformation.to_yaml()
     assert yaml.full_load(yaml_result) == transformation_dict
-    CollectionTransformation.from_yaml(yaml_result)
+    transformation_second = CollectionTransformation.from_yaml(yaml_result)
+    assert isinstance(transformation_second, CollectionTransformation)
 
 
-def test_collection_transformation_load_and_apply():
+def test_collection_transformation_regular_load_and_apply():
     """
-    Verify transformation can be loaded from JSON and applied again.
+    Verify rule-based transformations can be loaded and applied.
     """
     payload = Path("tests/zyp/transformation-collection.yaml").read_text()
     transformation = CollectionTransformation.from_yaml(payload)
     result = transformation.apply(deepcopy(ComplexRecipe.data_in))
     assert result == ComplexRecipe.data_out
+
+
+def test_collection_transformation_treatment_load_and_apply():
+    """
+    Verify collection transformation with treatment can be loaded and applied.
+    """
+    payload = Path("tests/zyp/transformation-collection-treatment.yaml").read_text()
+    transformation = CollectionTransformation.from_yaml(payload)
+    result = transformation.apply(deepcopy(ComplexRecipe.data_in))
+    assert result == {
+        "message-source": "system-3000",
+        "message-type": "eai-warehouse",
+    }

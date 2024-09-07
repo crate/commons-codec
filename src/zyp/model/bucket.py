@@ -17,11 +17,7 @@ from zyp.util.locator import swap_node, to_pointer
 logger = logging.getLogger(__name__)
 
 
-Record = t.Dict[str, t.Any]
-Collection = t.List[Record]
-DictOrList = t.Union[Record, Collection]
 TransonTemplate = t.Dict[str, t.Any]
-
 MokshaTransformer = t.Union[jmespath.parser.ParsedResult, jq._Program, transon.Transformer]
 
 
