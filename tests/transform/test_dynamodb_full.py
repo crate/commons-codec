@@ -98,6 +98,7 @@ def test_to_sql_operation():
     )
 
 
+@pytest.mark.integration
 def test_to_sql_cratedb(caplog, cratedb):
     """
     Verify writing converted DynamoDB record to CrateDB.
