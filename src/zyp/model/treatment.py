@@ -1,3 +1,4 @@
+import builtins
 import typing as t
 
 from attr import Factory
@@ -13,6 +14,7 @@ class Treatment(Dumpable):
     convert_list: t.List[str] = Factory(list)
     convert_string: t.List[str] = Factory(list)
     convert_dict: t.List[t.Dict[str, str]] = Factory(list)
+    normalize_complex_lists: bool = False
     prune_invalid_date: t.List[str] = Factory(list)
 
     def apply(self, data: DictOrList) -> DictOrList:
@@ -28,7 +30,7 @@ class Treatment(Dumpable):
         local_ignores = []
         if self.ignore_complex_lists:
             for k, v in data.items():
-                if isinstance(v, list) and v and isinstance(v[0], dict):
+                if self.is_list_of_dicts(v):
                     # Skip ignoring special-encoded items.
                     if v[0] and list(v[0].keys())[0].startswith("$"):
                         continue
@@ -38,6 +40,12 @@ class Treatment(Dumpable):
         for ignore_name in self.ignore_field + local_ignores:
             if ignore_name in data:
                 del data[ignore_name]
+
+        # Apply normalization for lists of objects.
+        if self.normalize_complex_lists:
+            for _, v in data.items():
+                if self.is_list_of_dicts(v):
+                    ListOfVaryingObjectsNormalizer(v).apply()
 
         # Converge certain items to `list` even when defined differently.
         for to_list_name in self.convert_list:
@@ -66,3 +74,58 @@ class Treatment(Dumpable):
                         del data[key]
 
         return data
+
+    @staticmethod
+    def is_list_of_dicts(v: t.Any) -> bool:
+        return isinstance(v, list) and bool(v) and isinstance(v[0], dict)
+
+
+@define
+class NormalizerRule:
+    """
+    Manage details of a normalizer rule.
+    """
+
+    name: str
+    converter: t.Callable
+
+
+@define
+class ListOfVaryingObjectsNormalizer:
+    """
+    CrateDB can not store lists of varying objects, so try to normalize them.
+    """
+
+    data: Collection
+
+    def apply(self):
+        self.apply_rules(self.get_rules(self.type_stats()))
+
+    def apply_rules(self, rules: t.List[NormalizerRule]) -> None:
+        for item in self.data:
+            for rule in rules:
+                name = rule.name
+                if name in item:
+                    item[name] = rule.converter(item[name])
+
+    def get_rules(self, statistics) -> t.List[NormalizerRule]:
+        rules = []
+        for name, types in statistics.items():
+            if len(types) > 1:
+                rules.append(NormalizerRule(name=name, converter=self.get_best_converter(types)))
+        return rules
+
+    def type_stats(self) -> t.Dict[str, t.List[str]]:
+        types: t.Dict[str, t.List[str]] = {}
+        for item in self.data:
+            for key, value in item.items():
+                types.setdefault(key, []).append(type(value).__name__)
+        return types
+
+    @staticmethod
+    def get_best_converter(types: t.List[str]) -> t.Callable:
+        if "str" in types:
+            return builtins.str
+        if "float" in types and "int" in types and "str" not in types:
+            return builtins.float
+        return lambda x: x
