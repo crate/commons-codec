@@ -9,6 +9,10 @@ from cattrs.preconf.pyyaml import make_converter as make_yaml_converter
 
 from zyp.util.data import no_privates_no_nulls_no_empties
 
+Record = t.Dict[str, t.Any]
+Collection = t.List[Record]
+DictOrList = t.Union[Record, Collection]
+
 
 @define
 class Metadata:

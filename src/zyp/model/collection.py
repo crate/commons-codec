@@ -2,9 +2,10 @@ import typing as t
 
 from attrs import define
 
-from zyp.model.base import Dumpable, Metadata, SchemaDefinition
-from zyp.model.bucket import BucketTransformation, Collection, DictOrList
+from zyp.model.base import Collection, DictOrList, Dumpable, Metadata, SchemaDefinition
+from zyp.model.bucket import BucketTransformation
 from zyp.model.moksha import MokshaTransformation
+from zyp.model.treatment import Treatment
 
 
 @define(frozen=True)
@@ -35,4 +36,6 @@ class CollectionTransformation(Dumpable):
                 collection_out.append(item)
         if self.post:
             collection_out = t.cast(Collection, self.post.apply(collection_out))
+        if self.treatment:
+            collection_out = t.cast(Collection, self.treatment.apply(collection_out))
         return collection_out
