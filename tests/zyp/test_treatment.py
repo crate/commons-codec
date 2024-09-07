@@ -70,6 +70,29 @@ def test_treatment_ignore_fields():
     assert transformation.apply([{"data": [{"abc": 123}]}]) == [{"data": [{}]}]
 
 
+def test_treatment_normalize_complex_lists_success():
+    """
+    Verify normalizing lists of objects works.
+    """
+    transformation = Treatment(normalize_complex_lists=True)
+    assert transformation.apply([{"data": [{"abc": 123.42}, {"abc": 123}]}]) == [
+        {"data": [{"abc": 123.42}, {"abc": 123.0}]}
+    ]
+    assert transformation.apply([{"data": [{"abc": 123}, {"abc": "123"}]}]) == [
+        {"data": [{"abc": "123"}, {"abc": "123"}]}
+    ]
+
+
+def test_treatment_normalize_complex_lists_passthrough():
+    """
+    When no normalization rule can be applied, return input 1:1.
+    """
+    transformation = Treatment(normalize_complex_lists=True)
+    assert transformation.apply([{"data": [{"abc": 123.42}, {"abc": None}]}]) == [
+        {"data": [{"abc": 123.42}, {"abc": None}]}
+    ]
+
+
 def test_treatment_convert_string():
     """
     Verify treating nested data to convert values into strings works.
