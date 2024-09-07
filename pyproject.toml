@@ -247,6 +247,7 @@ python_files = [
 xfail_strict = true
 markers = [
   "dynamodb",
+  "integration",
   "mongodb",
   "tasmota",
   "wemos",
