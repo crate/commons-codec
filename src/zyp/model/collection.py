@@ -21,13 +21,15 @@ class CollectionTransformation(Dumpable):
     pre: t.Union[MokshaTransformation, None] = None
     bucket: t.Union[BucketTransformation, None] = None
     post: t.Union[MokshaTransformation, None] = None
+    treatment: t.Union[Treatment, None] = None
 
     def apply(self, data: DictOrList) -> Collection:
         collection = t.cast(Collection, data)
+        collection_out = collection
         if self.pre:
             collection = t.cast(Collection, self.pre.apply(collection))
-        collection_out: Collection = []
         if self.bucket:
+            collection_out = []
             for item in collection:
                 item = self.bucket.apply(item)
                 collection_out.append(item)
