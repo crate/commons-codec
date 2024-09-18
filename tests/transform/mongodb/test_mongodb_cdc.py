@@ -126,10 +126,10 @@ def test_decode_cdc_insert():
         parameters={
             "oid": "669683c2b0750b2c84893f3e",
             "record": {
-                "_id": {"$oid": "669683c2b0750b2c84893f3e"},
+                "_id": "669683c2b0750b2c84893f3e",
                 "id": "5F9E",
                 "data": {"temperature": 42.42, "humidity": 84.84},
-                "meta": {"timestamp": {"$date": "2024-07-11T23:17:42Z"}, "device": "foo"},
+                "meta": {"timestamp": 1720739862000, "device": "foo"},
             },
         },
     )
@@ -140,10 +140,10 @@ def test_decode_cdc_update():
         statement="UPDATE foo SET data = :record WHERE oid = '669683c2b0750b2c84893f3e';",
         parameters={
             "record": {
-                "_id": {"$oid": "669683c2b0750b2c84893f3e"},
+                "_id": "669683c2b0750b2c84893f3e",
                 "id": "5F9E",
                 "data": {"temperature": 42.5},
-                "meta": {"timestamp": {"$date": "2024-07-11T23:17:42Z"}, "device": "foo"},
+                "meta": {"timestamp": 1720739862000, "device": "foo"},
             }
         },
     )
@@ -152,7 +152,7 @@ def test_decode_cdc_update():
 def test_decode_cdc_replace():
     assert MongoDBCDCTranslator(table_name="foo").to_sql(MSG_REPLACE) == SQLOperation(
         statement="UPDATE foo SET data = :record WHERE oid = '669683c2b0750b2c84893f3e';",
-        parameters={"record": {"_id": {"$oid": "669683c2b0750b2c84893f3e"}, "tags": ["deleted"]}},
+        parameters={"record": {"_id": "669683c2b0750b2c84893f3e", "tags": ["deleted"]}},
     )
 
 
