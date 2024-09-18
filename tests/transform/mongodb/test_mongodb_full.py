@@ -2,7 +2,7 @@ import pytest
 
 from commons_codec.model import SQLOperation
 from commons_codec.transform.mongodb import MongoDBCrateDBConverter, MongoDBFullLoadTranslator
-from tests.transform.test_mongodb_data import RECORD_IN_ALL_TYPES, RECORD_OUT_ALL_TYPES
+from tests.transform.mongodb.data import RECORD_IN_ALL_TYPES, RECORD_OUT_ALL_TYPES
 
 
 def test_sql_ddl():
