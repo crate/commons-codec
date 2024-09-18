@@ -5,6 +5,7 @@
 - Zyp: Fixed execution of collection transformation
 - Zyp: Added software test and documentation about flattening lists
 - MongoDB: Use `bson` package to parse BSON CANONICAL representation
+- MongoDB: Complete and verify BSON data type mapping end-to-end
 
 ## 2024/09/10 v0.0.15
 - Added Zyp Treatments, a slightly tailored transformation subsystem

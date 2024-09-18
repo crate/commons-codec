@@ -82,13 +82,18 @@ class MongoDBCrateDBConverter:
 
     @staticmethod
     def decode_canonical(value: t.Dict[str, t.Any]) -> t.Any:
+        """
+        Decode BSON CANONICAL representation.
+        """
         type_ = list(value.keys())[0]
         # Special handling for datetime representation in NUMBERLONG format (emulated depth-first).
-        if type_ == "$date" and "$numberLong" in value["$date"]:
-            value["$date"] = object_hook(value["$date"])
-        value = object_hook(value)
+        is_date_numberlong = type_ == "$date" and "$numberLong" in value["$date"]
+        if is_date_numberlong:
+            return int(object_hook(value["$date"]))
+        else:
+            value = object_hook(value)
         is_bson = type(value).__module__.startswith("bson")
-        if isinstance(value, bson.Binary) and value.subtype in bson.ALL_UUID_SUBTYPES:
+        if isinstance(value, bson.Binary) and value.subtype == bson.UUID_SUBTYPE:
             value = value.as_uuid()
         if isinstance(value, bson.Timestamp):
             value = value.as_datetime()
