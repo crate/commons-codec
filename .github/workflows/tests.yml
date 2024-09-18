@@ -106,7 +106,7 @@ jobs:
           pip install "setuptools>=64" --upgrade
 
           # Install package in editable mode.
-          pip install --use-pep517 --prefer-binary --editable=.[mongodb,develop,test]
+          pip install --use-pep517 --prefer-binary --editable=.[develop,test]
 
       - name: Run linters and software tests
         run: poe test -- -m 'dynamodb'
@@ -161,7 +161,7 @@ jobs:
           pip install "setuptools>=64" --upgrade
 
           # Install package in editable mode.
-          pip install --use-pep517 --prefer-binary --editable=.[mongodb,develop,test]
+          pip install --use-pep517 --prefer-binary --editable=.[mongodb,zyp,develop,test]
 
       - name: Run linters and software tests
         run: poe test -- -m 'mongodb'

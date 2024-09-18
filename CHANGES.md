@@ -7,6 +7,7 @@
 - MongoDB: Use `bson` package to parse BSON CANONICAL representation
 - MongoDB: Complete and verify BSON data type mapping end-to-end
 - MongoDB: Use improved decoding machinery also for `MongoDBCDCTranslator`
+- Dependencies: Make MongoDB subsystem not strictly depend on Zyp
 
 ## 2024/09/10 v0.0.15
 - Added Zyp Treatments, a slightly tailored transformation subsystem

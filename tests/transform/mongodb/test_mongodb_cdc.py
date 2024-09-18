@@ -5,12 +5,9 @@ pytestmark = pytest.mark.mongodb
 
 import datetime
 
-from commons_codec.model import SQLOperation
-
-pytest.importorskip("pymongo")
-
 from bson import ObjectId, Timestamp
 
+from commons_codec.model import SQLOperation
 from commons_codec.transform.mongodb import MongoDBCDCTranslator
 
 MSG_OPERATION_UNKNOWN = {
