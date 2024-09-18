@@ -15,14 +15,12 @@ from pymongo.cursor import Cursor
 from sqlalchemy_cratedb.support import quote_relation_name
 
 from commons_codec.model import SQLOperation
-from zyp.model.base import DictOrList
-from zyp.model.collection import CollectionTransformation
-
-logger = logging.getLogger(__name__)
-
 
 Document = t.Mapping[str, t.Any]
 DocumentCollection = t.List[Document]
+
+
+logger = logging.getLogger(__name__)
 
 
 def date_converter(value):
@@ -45,15 +43,16 @@ class MongoDBCrateDBConverter:
     Extracted from cratedb-toolkit, earlier migr8.
     """
 
-    transformation: t.Union[CollectionTransformation, None] = None
+    transformation: t.Any = None
 
     def decode_documents(self, data: t.Iterable[Document]) -> Iterable[Document]:
         """
         Decode MongoDB Extended JSON, considering CrateDB specifics.
         """
         data = map(self.decode_value, data)
+        # TODO: This is currently untyped. Types are defined in Zyp, see `zyp.model.base`.
         if self.transformation is not None:
-            data = self.transformation.apply(t.cast(DictOrList, data))
+            data = self.transformation.apply(data)
         return data
 
     def decode_document(self, data: Document) -> Document:

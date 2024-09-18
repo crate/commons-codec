@@ -1,4 +1,7 @@
+# ruff: noqa: E402
 import pytest
+
+pytestmark = pytest.mark.mongodb
 
 from commons_codec.model import SQLOperation
 from commons_codec.transform.mongodb import MongoDBFullLoadTranslator

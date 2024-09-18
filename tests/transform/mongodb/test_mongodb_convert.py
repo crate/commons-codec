@@ -1,11 +1,12 @@
+# ruff: noqa: E402
 import pytest
+
+pytestmark = pytest.mark.mongodb
 
 from commons_codec.transform.mongodb import MongoDBCrateDBConverter, date_converter
 from zyp.model.bucket import BucketTransformation, ValueConverter
 from zyp.model.collection import CollectionTransformation
 from zyp.model.treatment import Treatment
-
-pytestmark = pytest.mark.mongodb
 
 
 def test_date_converter_int():
