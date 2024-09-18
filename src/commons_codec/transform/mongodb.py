@@ -5,17 +5,17 @@ import calendar
 import datetime as dt
 import logging
 import typing as t
-from typing import Any, Iterable
+from typing import Iterable
 
 import bson
 import dateutil.parser as dateparser
-from attr import Factory
 from attrs import define
 from bson.json_util import _json_convert, object_hook
 from pymongo.cursor import Cursor
 from sqlalchemy_cratedb.support import quote_relation_name
 
 from commons_codec.model import SQLOperation
+from zyp.model.base import DictOrList
 from zyp.model.collection import CollectionTransformation
 
 logger = logging.getLogger(__name__)
@@ -45,13 +45,16 @@ class MongoDBCrateDBConverter:
     Extracted from cratedb-toolkit, earlier migr8.
     """
 
-    transformation: CollectionTransformation = Factory(CollectionTransformation)
+    transformation: t.Union[CollectionTransformation, None] = None
 
-    def decode_documents(self, data: t.List[Document]) -> Iterable[dict[str, Any]]:
+    def decode_documents(self, data: t.Iterable[Document]) -> Iterable[Document]:
         """
         Decode MongoDB Extended JSON, considering CrateDB specifics.
         """
-        return self.transformation.apply(map(self.decode_value, data))
+        data = map(self.decode_value, data)
+        if self.transformation is not None:
+            data = self.transformation.apply(t.cast(DictOrList, data))
+        return data
 
     def decode_document(self, data: Document) -> Document:
         """
