@@ -173,8 +173,8 @@ def test_convert_transform_timestamp():
     """
     Validate a Zyp transformation that converts datetime values in text format.
     """
-    data_in = [{"device": "Hotzenplotz", "temperature": 42.42, "timestamp": "06/14/2022 12:42:24"}]
-    data_out = [{"device": "Hotzenplotz", "temperature": 42.42, "timestamp": 1655203344}]
+    data_in = [{"device": "Hotzenplotz", "temperature": 42.42, "timestamp": "06/14/2022 12:42:24.4242 UTC"}]
+    data_out = [{"device": "Hotzenplotz", "temperature": 42.42, "timestamp": 1655210544.4242}]
 
     bucket_transformation = BucketTransformation(
         values=ValueConverter().add(pointer="/timestamp", transformer="to_unixtime"),
