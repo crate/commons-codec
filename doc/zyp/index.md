@@ -20,7 +20,7 @@ implemented using [attrs] and [cattrs].
     system before applying subsequent transformations. Zyp is working directly within
     the data pipeline, before data is inserted into the target system.
 
-## Synopsis I
+## Example I
 A basic transformation example for individual data records.
 
 ```python
@@ -52,7 +52,7 @@ The result is a transformed data collection.
 ]
 ```
 
-## Synopsis II
+## Example II
 A more advanced transformation example for a collection of data records.
 
 Consider a messy collection of input data.
@@ -120,7 +120,7 @@ transformation = CollectionTransformation(
     post=MokshaTransformation().jq(".[] |= (.data.value /= 100)"),
 )
 
-data_out = transformation.apply(data_in)
+assert transformation.apply(data_in) == data_out
 ```
 Alternatively, serialize the `zyp-collection` transformation description,
 for example into YAML format.
@@ -149,6 +149,50 @@ bucket:
 post:
   rules:
   - expression: .[] |= (.data.value /= 100)
+    type: jq
+```
+
+## Example III
+A compact transformation example that uses `jq` to:
+
+- Unwrap the actual collection which is nested within the top-level `records` item.
+- Flatten the item `nested-list` which contains nested lists.
+
+```python
+from zyp.model.collection import CollectionTransformation
+from zyp.model.moksha import MokshaTransformation
+
+data_in = {
+  "message-source": "system-3000",
+  "message-type": "eai-warehouse",
+  "records": [
+    {"nested-list": [{"foo": 1}, [{"foo": 2}, {"foo": 3}]]},
+  ],
+}
+
+data_out = [
+  {"nested-list": [{"foo": 1}, {"foo": 2}, {"foo": 3}]},
+]
+
+transformation = CollectionTransformation(
+    pre=MokshaTransformation()
+    .jq(".records")
+    .jq('.[] |= (."nested-list" |= flatten)'),
+)
+
+assert transformation.apply(data_in) == data_out
+```
+
+The same transformation represented in YAML format looks like this.
+```yaml
+meta:
+  type: zyp-collection
+  version: 1
+pre:
+  rules:
+  - expression: .records
+    type: jq
+  - expression: .[] |= (.data."nested-list" |= flatten)
     type: jq
 ```
 

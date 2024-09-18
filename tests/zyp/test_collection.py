@@ -8,8 +8,10 @@ from zyp.model.collection import CollectionTransformation
 from zyp.model.moksha import MokshaTransformation
 
 
-class ComplexRecipe:
+class CompositeRecipe:
     """
+    Composite recipe composed of demo input and output data and a corresponding transformation.
+
     It executes the following steps, in order of appearance:
 
     - Unwrap `records` attribute from container dictionary into actual collection.
@@ -53,18 +55,58 @@ class ComplexRecipe:
     )
 
 
-def test_collection_transformation_success():
+class ListRecipes:
+    """
+    Demo transformation recipe for handling anomalies in lists.
+    """
+
+    # Define a messy input data collection.
+    data_in = {
+        "message-source": "community",
+        "message-type": "mixed-pickles",
+        "records": [
+            {
+                "data": {
+                    "to-list-flat": [{"foo": 1}, [{"foo": 2}, {"foo": 3}]],
+                },
+            },
+        ],
+    }
+
+    # Define expectation of the cleansed data collection.
+    data_out = [
+        {
+            "data": {
+                "to-list-flat": [{"foo": 1}, {"foo": 2}, {"foo": 3}],
+            },
+        },
+    ]
+
+    # Define transformation.
+    transformation = CollectionTransformation(
+        pre=MokshaTransformation().jq(".records").jq('.[] |= (.data."to-list-flat" |= flatten)'),
+    )
+
+
+def test_collection_transformation_composite_success():
     """
     Verify transformation recipe for re-shaping a collection of records.
     """
-    assert ComplexRecipe.transformation.apply(ComplexRecipe.data_in) == ComplexRecipe.data_out
+    assert CompositeRecipe.transformation.apply(CompositeRecipe.data_in) == CompositeRecipe.data_out
+
+
+def test_collection_transformation_lists_success():
+    """
+    Verify transformation recipe for re-shaping anomalies in lists.
+    """
+    assert ListRecipes.transformation.apply(ListRecipes.data_in) == ListRecipes.data_out
 
 
 def test_collection_transformation_serialize():
     """
     Verify collection transformation description can be serialized to a data structure and back.
     """
-    transformation = ComplexRecipe.transformation
+    transformation = CompositeRecipe.transformation
     transformation_dict = {
         "meta": {"version": 1, "type": "zyp-collection"},
         "pre": {
@@ -99,8 +141,8 @@ def test_collection_transformation_regular_load_and_apply():
     """
     payload = Path("tests/zyp/transformation-collection.yaml").read_text()
     transformation = CollectionTransformation.from_yaml(payload)
-    result = transformation.apply(deepcopy(ComplexRecipe.data_in))
-    assert result == ComplexRecipe.data_out
+    result = transformation.apply(deepcopy(CompositeRecipe.data_in))
+    assert result == CompositeRecipe.data_out
 
 
 def test_collection_transformation_treatment_load_and_apply():
@@ -109,7 +151,7 @@ def test_collection_transformation_treatment_load_and_apply():
     """
     payload = Path("tests/zyp/transformation-collection-treatment.yaml").read_text()
     transformation = CollectionTransformation.from_yaml(payload)
-    result = transformation.apply(deepcopy(ComplexRecipe.data_in))
+    result = transformation.apply(deepcopy(CompositeRecipe.data_in))
     assert result == {
         "message-source": "system-3000",
         "message-type": "eai-warehouse",
