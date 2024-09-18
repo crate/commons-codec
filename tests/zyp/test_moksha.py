@@ -13,6 +13,16 @@ def test_moksha_jq_compute_nested():
     assert transformation.apply([{"data": {"abc": 123}}]) == [{"data": {"abc": 246}}]
 
 
+def test_moksha_jq_flatten_list():
+    """
+    Verify flattening nested list, using moksha/jq.
+    """
+    data_in = [{"data": {"abc": [{"foo": 1}, [{"foo": 2}, {"foo": 3}]]}}]
+    data_out = [{"data": {"abc": [{"foo": 1}, {"foo": 2}, {"foo": 3}]}}]
+    transformation = MokshaTransformation().jq(".[] |= (.data.abc |= flatten)")
+    assert transformation.apply(data_in) == data_out
+
+
 def test_transon_duplicate_records():
     """
     Verify record duplication works well.
