@@ -26,7 +26,6 @@ class CollectionTransformation(Dumpable):
 
     def apply(self, data: DictOrList) -> Collection:
         collection = t.cast(Collection, data)
-        collection_out = collection
         if self.pre:
             collection = t.cast(Collection, self.pre.apply(collection))
         if self.bucket:
@@ -34,8 +33,9 @@ class CollectionTransformation(Dumpable):
             for item in collection:
                 item = self.bucket.apply(item)
                 collection_out.append(item)
+            collection = collection_out
         if self.post:
-            collection_out = t.cast(Collection, self.post.apply(collection_out))
+            collection = t.cast(Collection, self.post.apply(collection))
         if self.treatment:
-            collection_out = t.cast(Collection, self.treatment.apply(collection_out))
-        return collection_out
+            collection = t.cast(Collection, self.treatment.apply(collection))
+        return collection
