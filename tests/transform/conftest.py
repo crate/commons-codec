@@ -3,6 +3,7 @@ import pytest
 RESET_TABLES = [
     "from.dynamodb",
     "from.generic",
+    "from.mongodb",
 ]
 
 

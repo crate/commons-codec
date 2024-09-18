@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- MongoDB: Added `MongoDBFullLoadTranslator` and `MongoDBCrateDBConverter`
 
 ## 2024/09/10 v0.0.15
 - Added Zyp Treatments, a slightly tailored transformation subsystem

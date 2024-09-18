@@ -11,7 +11,7 @@ pytest.importorskip("pymongo")
 
 from bson import ObjectId, Timestamp
 
-from commons_codec.transform.mongodb import MongoDBCDCTranslatorCrateDB
+from commons_codec.transform.mongodb import MongoDBCDCTranslator
 
 MSG_OPERATION_UNKNOWN = {
     "operationType": "foobar",
@@ -97,31 +97,31 @@ MSG_INVALIDATE = {
 
 def test_decode_cdc_sql_ddl():
     assert (
-        MongoDBCDCTranslatorCrateDB(table_name="foo").sql_ddl
+        MongoDBCDCTranslator(table_name="foo").sql_ddl
         == "CREATE TABLE IF NOT EXISTS foo (oid TEXT, data OBJECT(DYNAMIC));"
     )
 
 
 def test_decode_cdc_unknown_event():
     with pytest.raises(ValueError) as ex:
-        MongoDBCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_OPERATION_UNKNOWN)
+        MongoDBCDCTranslator(table_name="foo").to_sql(MSG_OPERATION_UNKNOWN)
     assert ex.match("Unknown CDC operation type: foobar")
 
 
 def test_decode_cdc_optype_missing():
     with pytest.raises(ValueError) as ex:
-        MongoDBCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_OPERATION_MISSING)
+        MongoDBCDCTranslator(table_name="foo").to_sql(MSG_OPERATION_MISSING)
     assert ex.match("Operation Type missing or empty: {}")
 
 
 def test_decode_cdc_optype_empty():
     with pytest.raises(ValueError) as ex:
-        MongoDBCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_OPERATION_EMPTY)
+        MongoDBCDCTranslator(table_name="foo").to_sql(MSG_OPERATION_EMPTY)
     assert ex.match("Operation Type missing or empty: {'operationType': ''}")
 
 
 def test_decode_cdc_insert():
-    assert MongoDBCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_INSERT) == SQLOperation(
+    assert MongoDBCDCTranslator(table_name="foo").to_sql(MSG_INSERT) == SQLOperation(
         statement="INSERT INTO foo (oid, data) VALUES (:oid, :record);",
         parameters={
             "oid": "669683c2b0750b2c84893f3e",
@@ -136,7 +136,7 @@ def test_decode_cdc_insert():
 
 
 def test_decode_cdc_update():
-    assert MongoDBCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_UPDATE) == SQLOperation(
+    assert MongoDBCDCTranslator(table_name="foo").to_sql(MSG_UPDATE) == SQLOperation(
         statement="UPDATE foo SET data = :record WHERE oid = '669683c2b0750b2c84893f3e';",
         parameters={
             "record": {
@@ -150,21 +150,21 @@ def test_decode_cdc_update():
 
 
 def test_decode_cdc_replace():
-    assert MongoDBCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_REPLACE) == SQLOperation(
+    assert MongoDBCDCTranslator(table_name="foo").to_sql(MSG_REPLACE) == SQLOperation(
         statement="UPDATE foo SET data = :record WHERE oid = '669683c2b0750b2c84893f3e';",
         parameters={"record": {"_id": {"$oid": "669683c2b0750b2c84893f3e"}, "tags": ["deleted"]}},
     )
 
 
 def test_decode_cdc_delete():
-    assert MongoDBCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_DELETE) == SQLOperation(
+    assert MongoDBCDCTranslator(table_name="foo").to_sql(MSG_DELETE) == SQLOperation(
         statement="DELETE FROM foo WHERE oid = '669693c5002ef91ea9c7a562';", parameters=None
     )
 
 
 def test_decode_cdc_drop():
-    assert MongoDBCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_DROP) is None
+    assert MongoDBCDCTranslator(table_name="foo").to_sql(MSG_DROP) is None
 
 
 def test_decode_cdc_invalidate():
-    assert MongoDBCDCTranslatorCrateDB(table_name="foo").to_sql(MSG_INVALIDATE) is None
+    assert MongoDBCDCTranslator(table_name="foo").to_sql(MSG_INVALIDATE) is None
