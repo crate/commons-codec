@@ -1,17 +1,17 @@
 # Copyright (c) 2021-2024, Crate.io Inc.
 # Distributed under the terms of the LGPLv3 license, see LICENSE.
 # ruff: noqa: S608
-import base64
 import calendar
+import datetime as dt
 import logging
 import typing as t
 from typing import Any, Iterable
-from uuid import UUID
 
+import bson
 import dateutil.parser as dateparser
 from attr import Factory
 from attrs import define
-from bson.json_util import _json_convert
+from bson.json_util import _json_convert, object_hook
 from pymongo.cursor import Cursor
 from sqlalchemy_cratedb.support import quote_relation_name
 
@@ -28,21 +28,13 @@ DocumentCollection = t.List[Document]
 def date_converter(value):
     if isinstance(value, int):
         return value
-    dt = dateparser.parse(value)
-    return calendar.timegm(dt.utctimetuple()) * 1000
-
-
-def timestamp_converter(value):
-    if len(str(value)) <= 10:
-        return value * 1000
-    return value
-
-
-type_converter = {
-    "date": date_converter,
-    "timestamp": timestamp_converter,
-    "undefined": lambda x: None,
-}
+    elif isinstance(value, (str, bytes)):
+        datetime = dateparser.parse(value)
+    elif isinstance(value, dt.datetime):
+        datetime = value
+    else:
+        raise ValueError(f"Unable to convert datetime value: {value}")
+    return calendar.timegm(datetime.utctimetuple()) * 1000
 
 
 @define
@@ -59,15 +51,15 @@ class MongoDBCrateDBConverter:
         """
         Decode MongoDB Extended JSON, considering CrateDB specifics.
         """
-        return self.transformation.apply(map(self.extract_value, data))
+        return self.transformation.apply(map(self.decode_value, data))
 
     def decode_document(self, data: Document) -> Document:
         """
         Decode MongoDB Extended JSON, considering CrateDB specifics.
         """
-        return self.extract_value(data)
+        return self.decode_value(data)
 
-    def extract_value(self, value: t.Any, parent_type: t.Optional[str] = None) -> t.Any:
+    def decode_value(self, value: t.Any) -> t.Any:
         """
         Decode MongoDB Extended JSON.
 
@@ -75,22 +67,35 @@ class MongoDBCrateDBConverter:
         - https://www.mongodb.com/docs/manual/reference/mongodb-extended-json/
         """
         if isinstance(value, dict):
+            # Decode item in BSON CANONICAL format.
+            if len(value) == 1:
+                return self.decode_canonical(value)
+
             # Custom adjustments to compensate shape anomalies in source data.
             self.apply_special_treatments(value)
-            if len(value) == 1:
-                if "$binary" in value and value["$binary"]["subType"] in ["03", "04"]:
-                    decoded = str(UUID(bytes=base64.b64decode(value["$binary"]["base64"])))
-                    return self.extract_value(decoded, parent_type)
-                for k, v in value.items():
-                    if k.startswith("$"):
-                        return self.extract_value(v, k.lstrip("$"))
-            return {k.lstrip("$"): self.extract_value(v, parent_type) for (k, v) in value.items()}
-        if isinstance(value, list):
-            return [self.extract_value(v, parent_type) for v in value]
-        if parent_type:
-            converter = type_converter.get(parent_type)
-            if converter:
-                return converter(value)
+
+            return {k: self.decode_value(v) for (k, v) in value.items()}
+        elif isinstance(value, list):
+            return [self.decode_value(v) for v in value]
+
+        return value
+
+    @staticmethod
+    def decode_canonical(value: t.Dict[str, t.Any]) -> t.Any:
+        type_ = list(value.keys())[0]
+        # Special handling for datetime representation in NUMBERLONG format (emulated depth-first).
+        if type_ == "$date" and "$numberLong" in value["$date"]:
+            value["$date"] = object_hook(value["$date"])
+        value = object_hook(value)
+        is_bson = type(value).__module__.startswith("bson")
+        if isinstance(value, bson.Binary) and value.subtype in bson.ALL_UUID_SUBTYPES:
+            value = value.as_uuid()
+        if isinstance(value, bson.Timestamp):
+            value = value.as_datetime()
+        if isinstance(value, dt.datetime):
+            return date_converter(value)
+        if is_bson:
+            return str(value)
         return value
 
     def apply_special_treatments(self, value: t.Any):

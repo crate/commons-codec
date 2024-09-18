@@ -1,6 +1,6 @@
 import pytest
 
-from commons_codec.transform.mongodb import MongoDBCrateDBConverter, date_converter, timestamp_converter
+from commons_codec.transform.mongodb import MongoDBCrateDBConverter, date_converter
 from zyp.model.bucket import BucketTransformation, ValueConverter
 from zyp.model.collection import CollectionTransformation
 from zyp.model.treatment import Treatment
@@ -12,21 +12,24 @@ def test_date_converter_int():
     """
     Datetime values encoded as integer values will be returned unmodified.
     """
-    assert date_converter(42) == 42
+    assert date_converter(1443004362000) == 1443004362000
 
 
-def test_timestamp_converter_s():
+def test_date_converter_iso8601():
     """
-    Timestamps encoded as integer values in seconds will be converted to milliseconds.
+    Datetime values encoded as ISO8601 values will be parsed.
     """
-    assert timestamp_converter(1726612077) == 1726612077000
+    assert date_converter("2015-09-23T10:32:42.33Z") == 1443004362000
+    assert date_converter(b"2015-09-23T10:32:42.33Z") == 1443004362000
 
 
-def test_timestamp_converter_ms():
+def test_date_converter_invalid():
     """
-    Timestamps in milliseconds will be returned unmodified.
+    Incorrect datetime values will not be parsed.
     """
-    assert timestamp_converter(1726612077000) == 1726612077000
+    with pytest.raises(ValueError) as ex:
+        date_converter(None)
+    assert ex.match("Unable to convert datetime value: None")
 
 
 def test_convert_with_treatment_ignore_complex_lists():
