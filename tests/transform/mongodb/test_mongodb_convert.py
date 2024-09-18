@@ -32,6 +32,29 @@ def test_date_converter_invalid():
     assert ex.match("Unable to convert datetime value: None")
 
 
+def test_convert_basic():
+    """
+    Just a basic conversion, without transformation.
+    """
+    data_in = {
+        "_id": {
+            "$oid": "56027fcae4b09385a85f9344",
+        },
+        "value": {
+            "id": 42,
+        },
+    }
+    data_out = {
+        "_id": "56027fcae4b09385a85f9344",
+        "value": {
+            "id": 42,
+        },
+    }
+
+    converter = MongoDBCrateDBConverter()
+    assert list(converter.decode_documents([data_in])) == [data_out]
+
+
 def test_convert_with_treatment_ignore_complex_lists():
     """
     The `ignore_complex_lists` treatment ignores lists of dictionaries, often having deviating substructures.
