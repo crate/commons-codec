@@ -142,9 +142,9 @@ class MongoDBTranslatorBase:
     # Define name of the column where CDC's record data will get materialized into.
     DATA_COLUMN = "data"
 
-    def __init__(self, table_name: str):
-        super().__init__()
+    def __init__(self, table_name: str, converter: t.Union[MongoDBCrateDBConverter, None] = None):
         self.table_name = quote_relation_name(table_name)
+        self.converter = converter or MongoDBCrateDBConverter()
 
     @property
     def sql_ddl(self):
@@ -192,10 +192,6 @@ class MongoDBFullLoadTranslator(MongoDBTranslatorBase):
     """
     Translate a MongoDB document into a CrateDB document.
     """
-
-    def __init__(self, table_name: str, converter: MongoDBCrateDBConverter):
-        super().__init__(table_name=table_name)
-        self.converter = converter
 
     @staticmethod
     def get_document_key(record: t.Mapping[str, t.Any]) -> str:
@@ -270,7 +266,8 @@ class MongoDBCDCTranslator(MongoDBTranslatorBase):
 
         if operation_type == "insert":
             oid: str = self.get_document_key(event)
-            record = self.decode_bson(self.get_full_document(event))
+            document = self.get_full_document(event)
+            record = self.converter.decode_document(self.decode_bson(document))
             sql = f"INSERT INTO {self.table_name} " f"({self.ID_COLUMN}, {self.DATA_COLUMN}) " "VALUES (:oid, :record);"
             parameters = {"oid": oid, "record": record}
 
@@ -278,7 +275,8 @@ class MongoDBCDCTranslator(MongoDBTranslatorBase):
         # you need to use `watch(full_document="updateLookup")`.
         # https://www.mongodb.com/docs/manual/changeStreams/#lookup-full-document-for-update-operations
         elif operation_type in ["update", "replace"]:
-            record = self.decode_bson(self.get_full_document(event))
+            document = self.get_full_document(event)
+            record = self.converter.decode_document(self.decode_bson(document))
             where_clause = self.where_clause(event)
             sql = f"UPDATE {self.table_name} " f"SET {self.DATA_COLUMN} = :record " f"WHERE {where_clause};"
             parameters = {"record": record}
