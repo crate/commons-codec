@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## 2024/09/19 v0.0.16
 - MongoDB: Added `MongoDBFullLoadTranslator` and `MongoDBCrateDBConverter`
 - Zyp: Fixed execution of collection transformation
 - Zyp: Added software test and documentation about flattening lists
