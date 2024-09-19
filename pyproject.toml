@@ -304,13 +304,13 @@ check = [
   "test",
 ]
 
-doc-autobuild = [
+docs-autobuild = [
   { cmd = "sphinx-autobuild --open-browser --watch src doc doc/_build" },
 ]
-doc-html = [
+docs-html = [
   { cmd = "sphinx-build -W --keep-going doc doc/_build" },
 ]
-doc-linkcheck = [
+docs-linkcheck = [
   { cmd = "sphinx-build -W --keep-going -b linkcheck doc doc/_build" },
 ]
 
