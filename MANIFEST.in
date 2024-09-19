@@ -1,0 +1,7 @@
+include *.md *.rst LICENSE
+recursive-include doc *.md *.rst *.py *.bat Makefile
+recursive-include src *.jq
+graft tests
+#recursive-include tests *.json *.yaml *.yml
+global-exclude *.py[cod]
+prune release
