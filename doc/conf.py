@@ -85,7 +85,9 @@ html_show_sourcelink = True
 intersphinx_mapping = {
     # "influxio": ("https://influxio.readthedocs.io/", None),
 }
-linkcheck_ignore = []
+linkcheck_ignore = [
+    r"https://stackoverflow.com/questions/70518350",
+]
 
 # Disable caching remote inventories completely.
 # http://www.sphinx-doc.org/en/stable/ext/intersphinx.html#confval-intersphinx_cache_limit

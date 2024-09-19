@@ -38,14 +38,6 @@ zyp/index
 ```
 
 ```{toctree}
-:maxdepth: 3
-:caption: Topics
-:hidden:
-
-prior-art
-```
-
-```{toctree}
 :maxdepth: 1
 :caption: Workbench
 :hidden:

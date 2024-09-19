@@ -1,133 +1,87 @@
 # Zyp Transformations
 
 ## About
-A data model and implementation for a compact transformation engine written
-in [Python], based on [JSON Pointer] (RFC 6901), [JMESPath], and [transon],
-implemented using [attrs] and [cattrs].
+A data model and implementation for a compact transformation engine 
+based on [JSON Pointer] (RFC 6901), [JMESPath], [jq], [transon], and [DWIM].
+
+The reference implementation is written in [Python], using [attrs] and [cattrs].
+The design, conventions, and definitions also encourage implementations
+in other programming languages.
 
 ## Ideas
 :Conciseness:
     Define a multistep data refinement process with as little code as possible.
-:Low Footprint:
-    Doesn't need any infrastructure or pipeline framework. It's just a little library.
+:Flexibility:
+    Zyp is a data transformation library that can be used within frameworks and
+    ad hoc pipelines equally well. To be invoked, it doesn't need any infrastructure
+    services and is pipeline framework agnostic.
 :Interoperability:
-    Marshal transformation recipe definition to/from text-only representations (JSON,
-    YAML), in order to encourage implementations in other languages.
+    Transformation recipe definitions are represented by a concise data model, which
+    can be marshalled to/from text-only representations like JSON or YAML, in order to
+    a) encourage implementations in other programming languages, and
+    b) be transferred, processed and stored by third party systems.
 :Performance:
-    Well, it is written in Python. Fragments can be re-written in Rust, when applicable.
+    Depending on how many transformation rules are written in pure Python vs. more
+    efficient processors like jqlang or other compiled transformation languages, it
+    may be slower or faster. When applicable, hot spots of the library
+    may gradually be rewritten in Rust if that topic becomes an issue.
 :Immediate:
     Other ETL frameworks and concepts often need to first land your data in the target
     system before applying subsequent transformations. Zyp is working directly within
     the data pipeline, before data is inserted into the target system.
 
-## Example I
-A basic transformation example for individual data records.
+## Design
+:Data Model:
+    The data model of Zyp is hierarchical: A Zyp project includes definitions for
+    multiple Zyp collections, whose includes definitions for possibly multiple sets
+    of transformation rules of different kinds, for example multiple items of
+    type `BucketTransformation` or `MokshaTransformation`.
 
-```python
-from zyp.model.bucket import BucketTransformation, FieldRenamer, ValueConverter
+:Components and Rules:
+    Those transformation components offer different kinds of features, mostly by
+    building upon well-known data transformation standards and processors like
+    JSON Pointer, `jq`, and friends. The components are configured using rules.
 
-# Consider a slightly messy collection of records.
-data_in = [
-    {"_id": "123", "name": "device-foo", "reading": "42.42"},
-    {"_id": "456", "name": "device-bar", "reading": -84.01},
-]
+:Phases and Process:
+    The transformation process is conducted on behalf of multiple phases that are
+    defined by labels like `pre`, `bucket`, `post`, `treatment`, in that order.
+    Each phase can include multiple rules of different kinds.
 
-# Define a transformation that renames the `_id` field to `id`,
-# casts its value to `int`, and casts the `reading` field to `float`. 
-transformation = BucketTransformation(
-    names=FieldRenamer().add(old="_id", new="id"),
-    values=ValueConverter()
-    .add(pointer="/id", transformer="builtins.int")
-    .add(pointer="/reading", transformer="builtins.float"),
-)
 
-for record in data_in:
-    print(transformation.apply(record))
-```
-The result is a transformed data collection.
-```json
-[
-  {"id": 123, "name": "device-foo", "reading": 42.42},
-  {"id": 456, "name": "device-bar", "reading": -84.01}
-]
-```
+## Synopsis
+::::{tab-set}
 
-## Example II
-A more advanced transformation example for a collection of data records.
-
-Consider a messy collection of input data.
-- The actual collection is nested within the top-level `records` item.
-- `_id` fields are conveyed in string format.
-- `value` fields include both integer and string values.
-- `value` fields are fixed-point values, using a scaling factor of `100`.
-- The collection includes invalid `null` records.
-  Those records usually trip processing when, for example, filtering on object items.
-```python
-data_in = {
-  "message-source": "system-3000",
-  "message-type": "eai-warehouse",
-  "records": [
-    {"_id": "12", "meta": {"name": "foo", "location": "B"}, "data": {"value": "4242"}},
-    None,
-    {"_id": "34", "meta": {"name": "bar", "location": "BY"}, "data": {"value": -8401}},
-    {"_id": "56", "meta": {"name": "baz", "location": "NI"}, "data": {"value": 2323}},
-    {"_id": "78", "meta": {"name": "qux", "location": "NRW"}, "data": {"value": -580}},
-    None,
-    None,
-  ],
-}
+:::{tab-item} zyp-project
+```{code-block} yaml
+:caption: A definition for a Zyp project in YAML format.
+meta:
+  type: zyp-project
+  version: 1
+collections:
+- address:
+    container: testdrive-db
+    name: foobar-collection
+  schema:
+    rules:
+    - pointer: /some_date
+      type: DATETIME
+    - pointer: /another_date
+      type: DATETIME
+  bucket:
+    values:
+      rules:
+      - pointer: /some_date
+        transformer: to_unixtime
+      - pointer: /another_date
+        transformer: to_unixtime
 ```
 
-Consider after applying a corresponding transformation, the expected outcome is a
-collection of valid records, optionally filtered, and values adjusted according
-to relevant type hints and other conversions.
-```python
-data_out = [
-  {"id": 12, "meta": {"name": "foo", "location": "B"}, "data": {"value": 42.42}},
-  {"id": 34, "meta": {"name": "bar", "location": "BY"}, "data": {"value": -84.01}},
-]
-```
+:::
 
-Let's come up with relevant pre-processing rules to cleanse and mangle the shape of the
-input collection. In order to make this example more exciting, let's include two special
-needs:
-- Filter input collection by value of nested element.
-- Rename top-level fields starting with underscore `_`.
+:::{tab-item} zyp-collection
+```{code-block} yaml
+:caption: A definition for a Zyp collection in YAML format.
 
-Other than those special rules, the fundamental ones to re-shape the data are:
-- Unwrap `records` attribute from container dictionary into actual collection.
-- Filter collection, both by omitting invalid/empty records, and by applying query
-  constrains.
-- On each record, rename the top-level `_id` field to `id`.
-- On each record, adjust the data types of the `id` and `value` fields.
-- Postprocess collection, applying a custom scaling factor to the `value` field.
-
-Zyp let's you concisely write those rules down, using the Python language.
-
-```python
-from zyp.model.bucket import BucketTransformation, FieldRenamer, ValueConverter
-from zyp.model.collection import CollectionTransformation
-from zyp.model.moksha import MokshaTransformation
-
-transformation = CollectionTransformation(
-    pre=MokshaTransformation().jmes("records[?not_null(meta.location) && !starts_with(meta.location, 'N')]"),
-    bucket=BucketTransformation(
-        names=FieldRenamer().add(old="_id", new="id"),
-        values=ValueConverter()
-        .add(pointer="/id", transformer="builtins.int")
-        .add(pointer="/data/value", transformer="builtins.float"),
-    ),
-    post=MokshaTransformation().jq(".[] |= (.data.value /= 100)"),
-)
-
-assert transformation.apply(data_in) == data_out
-```
-Alternatively, serialize the `zyp-collection` transformation description,
-for example into YAML format.
-```python
-print(transformation.to_yaml())
-```
-```yaml
 meta:
   version: 1
   type: zyp-collection
@@ -151,86 +105,51 @@ post:
   - expression: .[] |= (.data.value /= 100)
     type: jq
 ```
+:::
 
-## Example III
-A compact transformation example that uses `jq` to:
+::::
 
-- Unwrap the actual collection which is nested within the top-level `records` item.
-- Flatten the item `nested-list` which contains nested lists.
 
-```python
-from zyp.model.collection import CollectionTransformation
-from zyp.model.moksha import MokshaTransformation
+## Example Gallery
+In order to learn how to use Zyp, please explore the hands-on example gallery.
+```{toctree}
+:maxdepth: 2
 
-data_in = {
-  "message-source": "system-3000",
-  "message-type": "eai-warehouse",
-  "records": [
-    {"nested-list": [{"foo": 1}, [{"foo": 2}, {"foo": 3}]]},
-  ],
-}
-
-data_out = [
-  {"nested-list": [{"foo": 1}, {"foo": 2}, {"foo": 3}]},
-]
-
-transformation = CollectionTransformation(
-    pre=MokshaTransformation()
-    .jq(".records")
-    .jq('.[] |= (."nested-list" |= flatten)'),
-)
-
-assert transformation.apply(data_in) == data_out
+Examples <examples>
 ```
-
-The same transformation represented in YAML format looks like this.
-```yaml
-meta:
-  type: zyp-collection
-  version: 1
-pre:
-  rules:
-  - expression: .records
-    type: jq
-  - expression: .[] |= (.data."nested-list" |= flatten)
-    type: jq
-```
-
+You are also welcome to explore and inspect the software test cases to get further
+inspirations that might not have been reflected on the documentation yet.
+- [tests/zyp]
+- [tests/transform/mongodb]
+- [tests/transform/test_zyp_generic.py]
 
 ## Prior Art
-- [Singer Transformer]
-- [PipelineWise Transformations]
-- [singer-transform]
-- [Meltano Inline Data Mapping]
-- [Meltano Inline Stream Maps]
-- [AWS DMS source filter rules]
-- [AWS DMS table selection and transformation rules]
-- ... and many more. Thanks for the inspirations.
+See [research and development notes](project:#zyp-research),
+specifically [an introduction and overview about Singer].
 
 ## Etymology
-With kudos to [Kris Zyp] for conceiving [JSON Pointer].
+With kudos to [Kris Zyp] for conceiving [JSON Pointer] the other day.
 
-## More
 ```{toctree}
 :maxdepth: 1
+:hidden:
 
-research
-backlog
+Research <research>
+Backlog <backlog>
 ```
 
 
 
+[An introduction and overview about Singer]: https://github.com/daq-tools/lorrystream/blob/main/doc/singer/intro.md
 [attrs]: https://www.attrs.org/
-[AWS DMS source filter rules]: https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Tasks.CustomizingTasks.Filters.html
-[AWS DMS table selection and transformation rules]: https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Tasks.CustomizingTasks.TableMapping.SelectionTransformation.html
 [cattrs]: https://catt.rs/
+[DWIM]: https://en.wikipedia.org/wiki/DWIM
 [Kris Zyp]: https://github.com/kriszyp
+[jq]: https://jqlang.github.io/jq/
 [JMESPath]: https://jmespath.org/
 [JSON Pointer]: https://datatracker.ietf.org/doc/html/rfc6901
-[Meltano Inline Data Mapping]: https://docs.meltano.com/guide/mappers/
-[Meltano Inline Stream Maps]: https://sdk.meltano.com/en/latest/stream_maps.html
-[PipelineWise Transformations]: https://transferwise.github.io/pipelinewise/user_guide/transformations.html
 [Python]: https://en.wikipedia.org/wiki/Python_(programming_language)
-[Singer Transformer]: https://github.com/singer-io/singer-python/blob/master/singer/transform.py
-[singer-transform]: https://github.com/dkarzon/singer-transform
+[tests/zyp]: https://github.com/crate/commons-codec/tree/main/tests/zyp
+[tests/transform/mongodb]: https://github.com/crate/commons-codec/tree/main/tests/transform/mongodb
+[tests/transform/test_zyp_generic.py]: https://github.com/crate/commons-codec/blob/main/tests/transform/test_zyp_generic.py
 [transon]: https://transon-org.github.io/

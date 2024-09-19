@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/crate/commons-codec/actions/workflows/tests.yml/badge.svg)](https://github.com/crate/commons-codec/actions/workflows/tests.yml)
 [![Coverage](https://codecov.io/gh/crate/commons-codec/branch/main/graph/badge.svg)](https://app.codecov.io/gh/crate/commons-codec)
-[![Build status (documentation)](https://readthedocs.org/projects/commons-codec/badge/)](https://cratedb.com/docs/commons-codec/)
+[![Build status (documentation)](https://readthedocs.org/projects/commons-codec/badge/)](https://commons-codec.readthedocs.io/)
 [![PyPI Version](https://img.shields.io/pypi/v/commons-codec.svg)](https://pypi.org/project/commons-codec/)
 [![Python Version](https://img.shields.io/pypi/pyversions/commons-codec.svg)](https://pypi.org/project/commons-codec/)
 [![PyPI Downloads](https://pepy.tech/badge/commons-codec/month)](https://pepy.tech/project/commons-codec/)

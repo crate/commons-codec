@@ -9,6 +9,7 @@
 - MongoDB: Use improved decoding machinery also for `MongoDBCDCTranslator`
 - Dependencies: Make MongoDB subsystem not strictly depend on Zyp
 - Zyp: Translate a few special treatments to jq-based `MokshaTransformation` again
+- Zyp: Improve documentation
 
 ## 2024/09/10 v0.0.15
 - Added Zyp Treatments, a slightly tailored transformation subsystem
