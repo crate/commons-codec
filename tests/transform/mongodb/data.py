@@ -215,3 +215,28 @@ RECORD_OUT_ALL_TYPES = {
         "uuid": "73ffd264-44b3-4c69-90e8-e7d1dfc035d4",
     },
 }
+
+
+RECORD_IN_ANOMALIES = {
+    "_id": {
+        "$oid": "56027fcae4b09385a85f9344",
+    },
+    "python": {
+        "list_of_nested_list": [1, [2, 3], 4],
+        "list_of_objects": [{}],
+        "to_dict": 123,
+        "to_list": 123,
+        "to_string": 123,
+    },
+}
+
+RECORD_OUT_ANOMALIES = {
+    "_id": "56027fcae4b09385a85f9344",
+    "python": {
+        "list_of_nested_list": [1, 2, 3, 4],
+        "list_of_objects": None,
+        "to_dict": {"id": 123},
+        "to_list": [123],
+        "to_string": "123",
+    },
+}

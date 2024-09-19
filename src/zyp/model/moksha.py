@@ -30,7 +30,9 @@ class MokshaRuntimeRule:
         if isinstance(self.transformer, jmespath.parser.ParsedResult):
             return self.transformer.search(data, options=jmespath.Options(dict_cls=collections.OrderedDict))
         elif isinstance(self.transformer, jq._Program):
-            return self.transformer.input_value(data).first()
+            if isinstance(data, map):
+                data = list(data)
+            return self.transformer.transform(data)
         elif isinstance(self.transformer, transon.Transformer):
             return self.transformer.transform(data)
         else:

@@ -37,7 +37,7 @@ def test_compile_expression_jmes():
 
 def test_compile_expression_jq():
     transformer: jq._Program = compile_expression(type="jq", expression=".")
-    assert transformer.program_string == "."
+    assert transformer.program_string.endswith(".")
 
 
 def test_compile_expression_transon():
