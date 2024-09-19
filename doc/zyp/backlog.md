@@ -5,6 +5,9 @@
 - Documentation
 - CLI interface
 - Apply to MongoDB Table Loader in CrateDB Toolkit
+- Document `jq` functions
+  - `builtin.jq`: https://github.com/jqlang/jq/blob/master/src/builtin.jq
+  - `function.jq`
 
 ## Iteration +2
 Demonstrate!
@@ -18,6 +21,8 @@ Demonstrate!
 - https://github.com/MeltanoLabs/meltano-map-transform/pull/255
 - https://github.com/MeltanoLabs/meltano-map-transform/issues/252
 - Use JSONPath, see https://sdk.meltano.com/en/v0.39.1/code_samples.html#use-a-jsonpath-expression-to-extract-the-next-page-url-from-a-hateoas-response
+- Is `jqpy` better than `jq`?
+  https://baterflyrity.github.io/jqpy/
 
 ## Iteration +3
 - Moksha transformations on Buckets

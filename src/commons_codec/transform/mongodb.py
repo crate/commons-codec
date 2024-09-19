@@ -49,6 +49,7 @@ class MongoDBCrateDBConverter:
         """
         Decode MongoDB Extended JSON, considering CrateDB specifics.
         """
+        data = map(self.decode_bson, data)
         data = map(self.decode_value, data)
         # TODO: This is currently untyped. Types are defined in Zyp, see `zyp.model.base`.
         if self.transformation is not None:
@@ -59,7 +60,7 @@ class MongoDBCrateDBConverter:
         """
         Decode MongoDB Extended JSON, considering CrateDB specifics.
         """
-        return self.decode_value(data)
+        return self.decode_value(self.decode_bson(data))
 
     def decode_value(self, value: t.Any) -> t.Any:
         """
@@ -81,6 +82,38 @@ class MongoDBCrateDBConverter:
             return [self.decode_value(v) for v in value]
 
         return value
+
+    @staticmethod
+    def decode_bson(item: t.Mapping[str, t.Any]) -> t.Mapping[str, t.Any]:
+        """
+        Convert MongoDB Extended JSON to vanilla Python dictionary.
+
+        https://www.mongodb.com/docs/manual/reference/mongodb-extended-json/
+
+        Example:
+        {
+          "_id": ObjectId("669683c2b0750b2c84893f3e"),
+          "id": "5F9E",
+          "data": {"temperature": 42.42, "humidity": 84.84},
+          "meta": {"timestamp": datetime.datetime(2024, 7, 11, 23, 17, 42), "device": "foo"},
+        }
+
+        IN (top-level stripped):
+        "fullDocument": {
+            "_id": ObjectId("669683c2b0750b2c84893f3e"),
+            "id": "5F9E",
+            "data": {"temperature": 42.42, "humidity": 84.84},
+            "meta": {"timestamp": datetime.datetime(2024, 7, 11, 23, 17, 42), "device": "foo"},
+        }
+
+        OUT:
+        {"_id": {"$oid": "669683c2b0750b2c84893f3e"},
+         "id": "5F9E",
+         "data": {"temperature": 42.42, "humidity": 84.84},
+         "meta": {"timestamp": {"$date": "2024-07-11T23:17:42Z"}, "device": "foo"},
+        }
+        """
+        return _json_convert(item)
 
     @staticmethod
     def decode_canonical(value: t.Dict[str, t.Any]) -> t.Any:
@@ -154,38 +187,6 @@ class MongoDBTranslatorBase:
             f"CREATE TABLE IF NOT EXISTS {self.table_name} ({self.ID_COLUMN} TEXT, {self.DATA_COLUMN} OBJECT(DYNAMIC));"
         )
 
-    @staticmethod
-    def decode_bson(item: t.Mapping[str, t.Any]) -> t.Mapping[str, t.Any]:
-        """
-        Convert MongoDB Extended JSON to vanilla Python dictionary.
-
-        https://www.mongodb.com/docs/manual/reference/mongodb-extended-json/
-
-        Example:
-        {
-          "_id": ObjectId("669683c2b0750b2c84893f3e"),
-          "id": "5F9E",
-          "data": {"temperature": 42.42, "humidity": 84.84},
-          "meta": {"timestamp": datetime.datetime(2024, 7, 11, 23, 17, 42), "device": "foo"},
-        }
-
-        IN (top-level stripped):
-        "fullDocument": {
-            "_id": ObjectId("669683c2b0750b2c84893f3e"),
-            "id": "5F9E",
-            "data": {"temperature": 42.42, "humidity": 84.84},
-            "meta": {"timestamp": datetime.datetime(2024, 7, 11, 23, 17, 42), "device": "foo"},
-        }
-
-        OUT:
-        {"_id": {"$oid": "669683c2b0750b2c84893f3e"},
-         "id": "5F9E",
-         "data": {"temperature": 42.42, "humidity": 84.84},
-         "meta": {"timestamp": {"$date": "2024-07-11T23:17:42Z"}, "device": "foo"},
-        }
-        """
-        return _json_convert(item)
-
 
 class MongoDBFullLoadTranslator(MongoDBTranslatorBase):
     """
@@ -213,8 +214,7 @@ class MongoDBFullLoadTranslator(MongoDBTranslatorBase):
 
         # Converge multiple MongoDB documents into SQL parameters for `executemany` operation.
         parameters: t.List[Document] = []
-        for document in data:
-            record = self.converter.decode_document(self.decode_bson(document))
+        for record in self.converter.decode_documents(data):
             oid: str = self.get_document_key(record)
             parameters.append({"oid": oid, "record": record})
 
@@ -266,7 +266,7 @@ class MongoDBCDCTranslator(MongoDBTranslatorBase):
         if operation_type == "insert":
             oid: str = self.get_document_key(event)
             document = self.get_full_document(event)
-            record = self.converter.decode_document(self.decode_bson(document))
+            record = self.converter.decode_document(document)
             sql = f"INSERT INTO {self.table_name} " f"({self.ID_COLUMN}, {self.DATA_COLUMN}) " "VALUES (:oid, :record);"
             parameters = {"oid": oid, "record": record}
 
@@ -275,7 +275,7 @@ class MongoDBCDCTranslator(MongoDBTranslatorBase):
         # https://www.mongodb.com/docs/manual/changeStreams/#lookup-full-document-for-update-operations
         elif operation_type in ["update", "replace"]:
             document = self.get_full_document(event)
-            record = self.converter.decode_document(self.decode_bson(document))
+            record = self.converter.decode_document(document)
             where_clause = self.where_clause(event)
             sql = f"UPDATE {self.table_name} " f"SET {self.DATA_COLUMN} = :record " f"WHERE {where_clause};"
             parameters = {"record": record}
