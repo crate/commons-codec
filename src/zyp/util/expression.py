@@ -1,5 +1,10 @@
-import importlib
-import importlib.resources
+import sys
+
+if sys.version_info >= (3, 10):
+    from importlib.resources import files as resource_files
+else:  # pragma: no cover
+    from importlib_resources import files as resource_files
+
 import typing as t
 
 import jmespath
@@ -10,7 +15,7 @@ from zyp.model.bucket import MokshaTransformer, TransonTemplate
 
 # TODO: Is there a better way to configure jq using a custom search path
 #       instead of injecting the `include` statement each time again?
-jq_functions_path = importlib.resources.files("zyp")
+jq_functions_path = resource_files("zyp")
 jq_functions_import = f'include "function" {{"search": "{jq_functions_path}"}};'
 
 
