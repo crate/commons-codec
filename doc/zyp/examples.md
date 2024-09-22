@@ -456,6 +456,23 @@ how to define transformation rules, and the corresponding YAML representation.
 
 :::::::
 
+### Example Expressions
+This section enumerates a few expressions in this context that you may find
+useful.
+
+Drop object attributes by path, also multiple ones at once.
+```
+.[] |= del(.meta.timestamp, .data.def)
+```
+Drop array elements by index.
+```
+.[] |= del(.data.[1])
+```
+Drop attribute from all objects in array, where in some documents, array may
+not exist.
+```
+.[] |= del(.data.array[]?.def)
+```
 
 ## Unwrap and flatten with Moksha/jq
 A compact transformation example that uses `jq` to:
