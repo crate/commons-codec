@@ -241,7 +241,7 @@ def test_bucket_transformation_transon_filter():
     assert result == {"foo": "bar", "123": "456"}
 
 
-def test_bucket_transformation_success_2():
+def test_bucket_transformation_idempotency():
     """
     Running a transformation without any manipulations yields the original input value.
     """
@@ -250,7 +250,7 @@ def test_bucket_transformation_success_2():
     assert result == BasicReading.ingress
 
 
-def test_bucket_transformation_serialize():
+def test_bucket_marshal_success():
     """
     A transformation description can be serialized to a data structure and back.
     """
@@ -272,7 +272,7 @@ def test_bucket_transformation_serialize():
     assert json.loads(result) == transformation_dict
 
 
-def test_bucket_transformation_serialize_args():
+def test_bucket_marshal_function_args():
     """
     Check if transformer args are also serialized.
     """
@@ -287,7 +287,7 @@ def test_bucket_transformation_serialize_args():
     assert result == transformation_dict
 
 
-def test_bucket_transformation_load_and_apply():
+def test_bucket_marshal_load_and_apply():
     """
     Verify transformation can be loaded from JSON and applied again.
     """
@@ -298,7 +298,7 @@ def test_bucket_transformation_load_and_apply():
 
 
 @pytest.mark.skipif(sys.version_info < (3, 9), reason="Does not work on Python 3.8 and earlier")
-def test_bucket_transon_marshal():
+def test_bucket_marshal_transon_yaml():
     """
     Verify transformation can be loaded from JSON and applied again.
     """
