@@ -39,7 +39,8 @@ class ConverterBase:
 
     def _add_rule(self, rule):
         self.rules.append(rule)
-        self._add_runtime(rule)
+        if not rule.disabled:
+            self._add_runtime(rule)
         return self
 
     def _add_runtime(self, rule):
@@ -52,6 +53,7 @@ class ValueConverterRule(ConverterRuleBase):
     pointer: str
     transformer: str
     args: t.Union[t.List[t.Any], None] = Factory(list)
+    disabled: t.Optional[bool] = False
 
     def compile(self):
         pointer = to_pointer(self.pointer)
@@ -85,8 +87,10 @@ class ValueConverter(ConverterBase):
     rules: t.List[ValueConverterRule] = Factory(list)
     _runtime_rules: t.List[ValueConverterRuntimeRule] = Factory(list)
 
-    def add(self, pointer: str, transformer: str, args: t.List[t.Any] = None) -> "ValueConverter":
-        self._add_rule(ValueConverterRule(pointer=pointer, transformer=transformer, args=args))
+    def add(
+        self, pointer: str, transformer: str, args: t.List[t.Any] = None, disabled: bool = False
+    ) -> "ValueConverter":
+        self._add_rule(ValueConverterRule(pointer=pointer, transformer=transformer, args=args, disabled=disabled))
         return self
 
     def apply(self, data: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
@@ -120,6 +124,7 @@ class FieldRenamer:
 class TransonRule:
     pointer: str
     template: TransonTemplate
+    disabled: t.Optional[bool] = False
 
     def compile(self):
         return TransonRuntimeRule(to_pointer(self.pointer), transformer=transon.Transformer(self.template))

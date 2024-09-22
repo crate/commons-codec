@@ -16,17 +16,21 @@ from zyp.util.expression import compile_expression
 class MokshaRule:
     type: str
     expression: t.Union[str, TransonTemplate]
+    disabled: t.Optional[bool] = False
 
     def compile(self):
-        return MokshaRuntimeRule(self.type, compile_expression(self.type, self.expression))
+        return MokshaRuntimeRule(self.type, compile_expression(self.type, self.expression), disabled=self.disabled)
 
 
 @define
 class MokshaRuntimeRule:
     type: str
     transformer: MokshaTransformer
+    disabled: t.Optional[bool] = False
 
     def evaluate(self, data: DictOrList) -> DictOrList:
+        if self.disabled:
+            return data
         if isinstance(self.transformer, jmespath.parser.ParsedResult):
             return self.transformer.search(data, options=jmespath.Options(dict_cls=collections.OrderedDict))
         elif isinstance(self.transformer, jq._Program):

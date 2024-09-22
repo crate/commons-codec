@@ -2,12 +2,13 @@ import typing as t
 from collections import OrderedDict
 
 import attr
+import toolz
 from attr import Factory
 from attrs import define
 from cattrs.preconf.json import make_converter as make_json_converter
 from cattrs.preconf.pyyaml import make_converter as make_yaml_converter
 
-from zyp.util.data import no_privates_no_nulls_no_empties
+from zyp.util.data import no_disabled_false, no_privates_no_nulls_no_empties
 
 Record = t.Dict[str, t.Any]
 Collection = t.Iterable[Record]
@@ -54,7 +55,10 @@ class Dumpable:
     meta: t.Union[Metadata, None] = None
 
     def to_dict(self) -> t.Dict[str, t.Any]:
-        return attr.asdict(self, dict_factory=OrderedDict, filter=no_privates_no_nulls_no_empties)
+        def filter_(key, value):
+            return all(toolz.juxt(no_privates_no_nulls_no_empties, no_disabled_false)(key, value))
+
+        return attr.asdict(self, dict_factory=OrderedDict, filter=filter_)
 
     def to_json(self) -> str:
         converter = make_json_converter(dict_factory=OrderedDict)

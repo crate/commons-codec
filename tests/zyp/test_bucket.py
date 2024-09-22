@@ -146,6 +146,15 @@ def test_value_converter_path_invalid():
     assert ex.match("Location must start with /")
 
 
+def test_value_converter_disabled_rule():
+    """
+    Validate that a disabled rule does not apply.
+    """
+    engine = ValueConverter()
+    engine.add(pointer="/value", transformer="builtins.str", disabled=True)
+    assert engine.apply({"value": 42}) == {"value": 42}
+
+
 def test_value_converter_transformer_empty():
     """
     Converting values with an empty transformer reference fails.
@@ -174,6 +183,22 @@ def test_value_converter_transformer_unknown_symbol():
     with pytest.raises(AttributeError) as ex:
         engine.add(pointer="/foo", transformer="to_unknown")
     assert ex.match("module 'zyp.function' has no attribute 'to_unknown'")
+
+
+def test_value_converter_unknown_function_failure():
+    """
+    Make sure referencing unknown functions fails.
+    """
+    with pytest.raises(AttributeError) as ex:
+        ValueConverter().add(pointer="/foo", transformer="unknown42")
+    assert ex.match("module 'zyp.function' has no attribute 'unknown42'")
+
+
+def test_value_converter_unknown_function_disabled():
+    """
+    Make sure referencing unknown functions does not fail if rule has been disabled.
+    """
+    ValueConverter().add(pointer="/foo", transformer="unknown42", disabled=True)
 
 
 def test_bucket_transformation_success():
@@ -283,6 +308,28 @@ def test_bucket_transon_marshal():
         ),
     )
     BucketTransformation.from_yaml(transformation.to_yaml())
+
+
+def test_bucket_marshal_disabled_rule():
+    """
+    When marshaling the transformation, make sure `disabled: false` items are omitted.
+    """
+    transformation = BucketTransformation(
+        values=ValueConverter()
+        .add(pointer="/foo", transformer="to_unixtime", disabled=True)
+        .add(pointer="/baz", transformer="to_unixtime", disabled=False)
+    )
+    transformation_dict = {
+        "meta": {"version": 1, "type": "zyp-bucket"},
+        "values": {
+            "rules": [
+                {"pointer": "/foo", "transformer": "to_unixtime", "disabled": True},
+                {"pointer": "/baz", "transformer": "to_unixtime"},
+            ]
+        },
+    }
+    result = transformation.to_dict()
+    assert result == transformation_dict
 
 
 def test_from_dict():
