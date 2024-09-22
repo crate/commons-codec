@@ -75,6 +75,7 @@ class MongoDBCrateDBConverter:
                 return self.decode_canonical(value)
 
             # Custom adjustments to compensate shape anomalies in source data.
+            # TODO: Review if it can be removed or refactored.
             self.apply_special_treatments(value)
 
             return {k: self.decode_value(v) for (k, v) in value.items()}
@@ -86,24 +87,18 @@ class MongoDBCrateDBConverter:
     @staticmethod
     def decode_bson(item: t.Mapping[str, t.Any]) -> t.Mapping[str, t.Any]:
         """
-        Convert MongoDB Extended JSON to vanilla Python dictionary.
+        Decode data structure including BSON or native Python types to MongoDB Extended JSON format.
 
         https://www.mongodb.com/docs/manual/reference/mongodb-extended-json/
 
         Example:
+
+        IN:
         {
           "_id": ObjectId("669683c2b0750b2c84893f3e"),
           "id": "5F9E",
           "data": {"temperature": 42.42, "humidity": 84.84},
           "meta": {"timestamp": datetime.datetime(2024, 7, 11, 23, 17, 42), "device": "foo"},
-        }
-
-        IN (top-level stripped):
-        "fullDocument": {
-            "_id": ObjectId("669683c2b0750b2c84893f3e"),
-            "id": "5F9E",
-            "data": {"temperature": 42.42, "humidity": 84.84},
-            "meta": {"timestamp": datetime.datetime(2024, 7, 11, 23, 17, 42), "device": "foo"},
         }
 
         OUT:
@@ -118,7 +113,7 @@ class MongoDBCrateDBConverter:
     @staticmethod
     def decode_canonical(value: t.Dict[str, t.Any]) -> t.Any:
         """
-        Decode BSON CANONICAL representation.
+        Decode MongoDB Extended JSON CANONICAL representation.
         """
         type_ = list(value.keys())[0]
         # Special handling for datetime representation in NUMBERLONG format (emulated depth-first).
