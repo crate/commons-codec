@@ -163,15 +163,75 @@ def test_moksha_jq_cast_array_iterable():
     assert transformation.apply(data_in) == data_out
 
 
-def test_moksha_jq_cast_object():
+def test_moksha_jq_cast_object_naive():
     """
-    Verify type casting using moksha/jq.
+    Lists are hard. Verify type casting using jqlang stdlib's `to_object` on array of objects.
+
+    The naive approach will manifest substructures even on documents
+    that don't include the relevant attribute at all.
     """
 
-    data_in = [{"data": [{"abc": 123}, {"abc": 456}, {"abc": {"id": 789}}]}]
-    data_out = [{"data": [{"abc": {"id": 123}}, {"abc": {"id": 456}}, {"abc": {"id": 789}}]}]
+    data_in = [
+        {
+            "data": [
+                {"abc": 123},
+                {"abc": 456},
+                {"abc": {"id": 789}},
+                {},
+                {"def": 999},
+            ]
+        },
+    ]
+    data_out = [
+        {
+            "data": [
+                {"abc": {"id": 123}},
+                {"abc": {"id": 456}},
+                {"abc": {"id": 789}},
+                {"abc": {"id": None}},
+                {"abc": {"id": None}, "def": 999},
+            ]
+        },
+    ]
 
     transformation = MokshaTransformation().jq('.[] |= (.data[].abc |= to_object({"key": "id"}))')
+    assert transformation.apply(data_in) == data_out
+
+
+def test_moksha_jq_cast_object_advanced():
+    """
+    Lists are hard. Verify type casting using jqlang stdlib's `to_object` on array of objects.
+
+    The advanced approach will manifest substructures only on documents
+    that include the relevant attribute.
+    """
+
+    data_in = [
+        {
+            "data": [
+                {"abc": 123},
+                {"abc": 456},
+                {"abc": {"id": 789}},
+                {},
+                {"def": 999},
+            ]
+        },
+    ]
+    data_out = [
+        {
+            "data": [
+                {"abc": {"id": 123}},
+                {"abc": {"id": 456}},
+                {"abc": {"id": 789}},
+                {},
+                {"def": 999},
+            ]
+        },
+    ]
+
+    transformation = MokshaTransformation().jq(
+        '.[] |= (.data[] |= (if .abc then .abc |= to_object({"key": "id"}) end))'
+    )
     assert transformation.apply(data_in) == data_out
 
 
