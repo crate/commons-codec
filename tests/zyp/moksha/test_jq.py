@@ -47,6 +47,23 @@ def test_moksha_jq_select_drop_keys_object_direct():
     assert transformation.apply(data_in) == data_out
 
 
+def test_moksha_jq_select_drop_keys_object_array():
+    """
+    Verify selecting elements with moksha/jq, by dropping individual keys from objects within arrays.
+    In this case, on some documents, the array isn't present at all.
+    """
+    data_in = [
+        {"data": {"array": [{"abc": 123, "def": 456}, {"abc": 123, "def": 456}, {"abc": 123}]}},
+        {"data": {}},
+    ]
+    data_out = [
+        {"data": {"array": [{"abc": 123}, {"abc": 123}, {"abc": 123}]}},
+        {"data": {}},
+    ]
+    transformation = MokshaTransformation().jq(".[] |= del(.data.array[]?.def)")
+    assert transformation.apply(data_in) == data_out
+
+
 def test_moksha_jq_select_drop_indices():
     """
     Verify selecting elements with moksha/jq, by dropping individual indices from arrays.
