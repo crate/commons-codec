@@ -142,7 +142,7 @@ class MongoDBCrateDBConverter:
         """
 
         if self.transformation is None or self.transformation.treatment is None:
-            return None
+            return value
 
         return self.transformation.treatment.apply(value)
 
