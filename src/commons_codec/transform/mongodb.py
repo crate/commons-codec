@@ -71,7 +71,7 @@ class MongoDBCrateDBConverter:
         """
         if isinstance(value, dict):
             # Decode item in BSON CANONICAL format.
-            if len(value) == 1:
+            if len(value) == 1 and next(iter(value)).startswith("$"):
                 return self.decode_canonical(value)
 
             # Custom adjustments to compensate shape anomalies in source data.
