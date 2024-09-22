@@ -18,6 +18,8 @@
 ## Iteration +2
 - [ ] CLI interface
 - [ ] Documentation: Add Python example to "Synopsis" section on /index.html
+- [ ] Documentation: Compare with Seatunnel
+  https://github.com/apache/seatunnel/tree/dev/docs/en/transform-v2
 
 Demonstrate more use cases, like...
 - [ ] math expressions
