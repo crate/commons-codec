@@ -55,7 +55,7 @@ RECORD_IN_ALL_TYPES = {
     "canonical": {
         "code_ascii": {"$code": "abab"},
         "code_bytes": {"$code": "ab\u0000ab\u0000"},
-        "code_scope": {"$code": "abab", "$scope": {"x": {"$numberInt": 42}}},
+        "code_scope": {"$code": "abab", "$scope": {"x": {"$numberInt": "42"}}},
         "date_iso8601": {"$date": "2015-09-23T10:32:42.33Z"},
         "date_numberlong": {"$date": {"$numberLong": "1356351330000"}},
         "dbref": {
@@ -78,6 +78,7 @@ RECORD_IN_ALL_TYPES = {
         ],
         "list_dict": [
             {"id": "bar", "value": {"$date": "2015-09-24T10:32:42.33Z"}},
+            {"value": {"$date": "2015-09-24T10:32:42.33Z"}},
         ],
         "list_int": [
             {"$numberInt": "-2147483648"},
@@ -163,7 +164,7 @@ RECORD_OUT_ALL_TYPES = {
         "code_scope": {
             "$code": "abab",
             "$scope": {
-                "x": {"$numberInt": 42},
+                "x": 42,
             },
         },
         "date_iso8601": 1443004362000,
@@ -187,6 +188,7 @@ RECORD_OUT_ALL_TYPES = {
         ],
         "list_dict": [
             {"id": "bar", "value": 1443090762000},
+            {"value": 1443090762000},
         ],
         "list_int": [
             -2147483648,

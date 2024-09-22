@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- MongoDB: Fixed edge case when decoding MongoDB Extended JSON elements
 
 ## 2024/09/19 v0.0.16
 - MongoDB: Added `MongoDBFullLoadTranslator` and `MongoDBCrateDBConverter`
