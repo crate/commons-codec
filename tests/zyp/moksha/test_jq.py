@@ -33,11 +33,11 @@ def test_moksha_jq_select_pick_indices():
     """
     data_in = [{"data": [1, {"foo": "bar"}, 2]}]
     data_out = [{"data": [1, 2]}]
-    transformation = MokshaTransformation().jq(".[] |= (pick(.data.[0], .data.[2]) | prune_null)")
+    transformation = MokshaTransformation().jq(".[] |= pick(.data.[0], .data.[2]) | prune_null")
     assert transformation.apply(data_in) == data_out
 
 
-def test_moksha_jq_select_drop_keys_object_direct():
+def test_moksha_jq_select_drop_keys_object_exact():
     """
     Verify selecting elements with moksha/jq, by dropping individual keys from objects.
     """
@@ -47,18 +47,22 @@ def test_moksha_jq_select_drop_keys_object_direct():
     assert transformation.apply(data_in) == data_out
 
 
-def test_moksha_jq_select_drop_keys_object_array():
+def test_moksha_jq_select_drop_keys_object_iterable():
     """
     Verify selecting elements with moksha/jq, by dropping individual keys from objects within arrays.
     In this case, on some documents, the array isn't present at all.
     """
     data_in = [
         {"data": {"array": [{"abc": 123, "def": 456}, {"abc": 123, "def": 456}, {"abc": 123}]}},
+        {"data": {"array": 42}},
         {"data": {}},
+        {"meta": {"version": 42}},
     ]
     data_out = [
         {"data": {"array": [{"abc": 123}, {"abc": 123}, {"abc": 123}]}},
+        {"data": {"array": 42}},
         {"data": {}},
+        {"meta": {"version": 42}},
     ]
     transformation = MokshaTransformation().jq(".[] |= del(.data.array[]?.def)")
     assert transformation.apply(data_in) == data_out
@@ -74,14 +78,46 @@ def test_moksha_jq_select_drop_indices():
     assert transformation.apply(data_in) == data_out
 
 
-def test_moksha_jq_compute_scalar():
+def test_moksha_jq_compute_scalar_exact():
     """
-    Verify updating deeply nested field with value.
+    Verify updating value of deeply nested attribute if it exists.
     https://stackoverflow.com/a/65822084
     """
-    data_in = [{"data": {"abc": 123}}]
-    data_out = [{"data": {"abc": 246}}]
-    transformation = MokshaTransformation().jq(".[] |= (.data.abc *= 2)")
+    data_in = [
+        {"data": {"abc": 123}},
+        {"data": {"def": 456}},
+        {"meta": {"version": 42}},
+    ]
+    data_out = [
+        {"data": {"abc": 246}},
+        {"data": {"def": 456}},
+        {"meta": {"version": 42}},
+    ]
+    transformation = MokshaTransformation().jq(".[] |= if .data.abc then .data.abc *= 2 end")
+    assert transformation.apply(data_in) == data_out
+
+
+def test_moksha_jq_compute_scalar_iterable():
+    """
+    Verify updating value of deeply nested attribute within an array if it exists.
+    """
+    data_in = [
+        {"data": [{"abc": 123}]},
+        {"data": [{"def": 456}]},
+        {"data": None},
+        {"data": 42},
+        {"meta": {"version": 42}},
+    ]
+    data_out = [
+        {"data": [{"abc": 246}]},
+        {"data": [{"def": 456}]},
+        {"data": None},
+        {"data": 42},
+        {"meta": {"version": 42}},
+    ]
+    transformation = MokshaTransformation().jq(
+        '.[] |= if (.data | type == "array") and .data[].abc then .data[].abc *= 2 end'
+    )
     assert transformation.apply(data_in) == data_out
 
 
