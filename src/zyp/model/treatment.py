@@ -31,8 +31,8 @@ class Treatment(Dumpable):
         if self.ignore_complex_lists:
             for k, v in data.items():
                 if self.is_list_of_dicts(v):
-                    if v[0] and list(v[0].keys())[0].startswith("$"):
                     # Never ignore items in MongoDB Extended JSON format.
+                    if v[0] and next(iter(v[0])).startswith("$"):
                         continue
                     local_ignores.append(k)
 
