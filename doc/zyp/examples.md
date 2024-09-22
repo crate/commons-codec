@@ -62,7 +62,7 @@ no tutorial yet: Please look at the source and software tests.
 # Includes column renaming and applying Python converter functions.
 
 from pprint import pprint
-from zyp.model.bucket import BucketTransformation, FieldRenamer, ValueConverter
+from zyp import BucketTransformation, FieldRenamer, ValueConverter
 
 # Consider a slightly messy collection of records.
 data_in = [
@@ -191,9 +191,9 @@ no tutorial yet: Please look at the source and software tests.
 # Uses all of JMES, jq, and JSON Pointer technologies for demonstration purposes.
 
 from pprint import pprint
-from zyp.model.bucket import BucketTransformation, FieldRenamer, ValueConverter
-from zyp.model.collection import CollectionTransformation
-from zyp.model.moksha import MokshaTransformation
+from zyp import \
+    BucketTransformation, CollectionTransformation, \
+    FieldRenamer, MokshaTransformation, ValueConverter
 
 # Consider a slightly messy collection of records.
 data_in = {
@@ -322,8 +322,7 @@ no tutorial yet: Please look at the source and software tests.
 # Includes a Moksha/jq transformation rule for including elements.
 
 from pprint import pprint
-from zyp.model.collection import CollectionTransformation
-from zyp.model.moksha import MokshaTransformation
+from zyp import CollectionTransformation, MokshaTransformation
 
 data_in = [
     {
@@ -413,8 +412,7 @@ no tutorial yet: Please look at the source and software tests.
 # Includes a Moksha/jq transformation rule for excluding elements.
 
 from pprint import pprint
-from zyp.model.collection import CollectionTransformation
-from zyp.model.moksha import MokshaTransformation
+from zyp import CollectionTransformation, MokshaTransformation
 
 data_in = [
     {
@@ -504,8 +502,7 @@ no tutorial yet: Please look at the source and software tests.
 # Includes two Moksha/jq transformation rules for unwrapping and flattening.
 
 from pprint import pprint
-from zyp.model.collection import CollectionTransformation
-from zyp.model.moksha import MokshaTransformation
+from zyp import CollectionTransformation, MokshaTransformation
 
 data_in = {
     "message-source": "community",
