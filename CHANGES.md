@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## 2024/09/22 v0.0.17
 - MongoDB: Fixed edge case when decoding MongoDB Extended JSON elements
 - Zyp: Added capability to skip rule evaluation when `disabled: true`
 
