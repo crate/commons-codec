@@ -7,6 +7,12 @@ to Zyp's capabilities.
 If you discover the need for another kind of transformation, or need assistance
 crafting transformation rules, please reach out to us on the [issue tracker].
 
+## General Information
+
+- Transformation recipes include a number of transformation rules
+- Transformation rules can use different kinds of processors
+- Individual rules can be toggled inactive by using the attribute `disabled: true` on them
+
 
 ## Bucket Transformation
 A `BucketTransformation` works on **individual data records**, i.e. on a per-record level,

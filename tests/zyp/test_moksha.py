@@ -145,6 +145,10 @@ def test_moksha_jq_flatten_array():
     assert transformation.apply(data_in) == data_out
 
 
+def test_moksha_jq_rule_disabled():
+    assert MokshaRule(type="jq", expression=". | tostring", disabled=True).compile().evaluate(42.42) == 42.42
+
+
 def test_transon_duplicate_records():
     """
     Verify record duplication works well.
