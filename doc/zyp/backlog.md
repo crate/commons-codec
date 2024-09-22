@@ -1,17 +1,24 @@
 # Zyp Backlog
 
 ## Iteration +1
-- [x] Refactor module namespace to `zyp`
-- [x] Documentation
-- [ ] CLI interface
-- [x] Apply to MongoDB Table Loader in CrateDB Toolkit
-- [ ] Document `jq` functions
+- [ ] Documentation: jqlang stdlib's `to_object` function for substructure management
+- [ ] Documentation: Type casting
+  `echo '{"a": 42, "b": {}, "c": []}' | jq -c '.|= (.b |= objects | .c |= objects)'`
+  `{"a":42,"b":{}}`
+- [ ] Renaming currently needs JSON Pointer support, implemented in Python.
+  Alternatively, can `jq` also do it?
+- [ ] Simple IFTTT: When condition, do that (i.e. add tag)
+- [ ] Documentation: `jq` functions
   - `builtin.jq`: https://github.com/jqlang/jq/blob/master/src/builtin.jq
   - `function.jq`
-- [ ] Renaming needs JSON Pointer support. Alternatively, can `jq` do it?
-- [ ] Documentation: Add Python example to "Synopsis" section on /index.html
+- [ ] Documentation: Update "What’s Inside"
+- [ ] Documentation: Usage (build (API, from_yaml), apply)
+- [ ] Documentation: How to extend `function.{jq,py}`
 
 ## Iteration +2
+- [ ] CLI interface
+- [ ] Documentation: Add Python example to "Synopsis" section on /index.html
+
 Demonstrate more use cases, like...
 - [ ] math expressions
 - [ ] omit key (recursively)
@@ -49,3 +56,11 @@ Demonstrate more use cases, like...
   - https://github.com/meltano/sdk/blob/v0.39.1/singer_sdk/mapper.py
 - [ ] Is `jqpy` better than `jq`?
   - https://baterflyrity.github.io/jqpy/
+
+## Done
+- [x] Refactor module namespace to `zyp`
+- [x] Documentation
+- [x] Apply to MongoDB Table Loader in CrateDB Toolkit
+- [x] Model: Toggle rule active / inactive by respecting `disabled` flag
+- [x] Documentation: How to delete attributes from lists using jq?
+- [x] Review and test jqlang stdlib's `to_object` function
