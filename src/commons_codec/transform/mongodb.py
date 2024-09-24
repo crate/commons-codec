@@ -124,17 +124,19 @@ class MongoDBCrateDBConverter:
         else:
             value = object_hook(value)
         is_bson = type(value).__module__.startswith("bson")
+
+        out: t.Any = value
         if isinstance(value, bson.Binary) and value.subtype == bson.UUID_SUBTYPE:
-            value = value.as_uuid()
+            out = value.as_uuid()
         elif isinstance(value, bson.Binary):
-            value = base64.b64encode(value).decode()
-        if isinstance(value, bson.Timestamp):
-            value = value.as_datetime()
-        if isinstance(value, dt.datetime):
-            return date_converter(value)
+            out = base64.b64encode(value).decode()
+        elif isinstance(value, bson.Timestamp):
+            out = value.as_datetime()
+        if isinstance(out, dt.datetime):
+            return date_converter(out)
         if is_bson:
-            return str(value)
-        return value
+            return str(out)
+        return out
 
     def apply_special_treatments(self, value: t.Any):
         """
