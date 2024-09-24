@@ -11,11 +11,21 @@ def to_array:
 
 def to_object(options):
     # Wrap element into object with given key if it isn't an object already.
+    # When option `zap: true`, remove element altogether because it is
+    # empty anyway, in the sense that it includes a single item with a
+    # null value.
     if . | type == "object" then
         .
     else
-        {(options.key): .}
-    end;
+        if . then
+            {(options.key): .}
+        end
+    end
+    |
+    if options.zap then
+        values
+    end
+    ;
 
 def is_array_of_objects:
     # Check if element is an array containing objects.

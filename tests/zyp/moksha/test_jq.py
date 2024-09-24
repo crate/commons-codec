@@ -188,13 +188,13 @@ def test_moksha_jq_cast_object_naive():
                 {"abc": {"id": 123}},
                 {"abc": {"id": 456}},
                 {"abc": {"id": 789}},
-                {"abc": {"id": None}},
-                {"abc": {"id": None}, "def": 999},
+                {},
+                {"def": 999},
             ]
         },
     ]
 
-    transformation = MokshaTransformation().jq('.[] |= (.data[].abc |= to_object({"key": "id"}))')
+    transformation = MokshaTransformation().jq('.[] |= (.data[].abc |= to_object({"key": "id", "zap": true}))')
     assert transformation.apply(data_in) == data_out
 
 
