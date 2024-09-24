@@ -3,6 +3,8 @@
 ## Unreleased
 - MongoDB: Improved `MongoDBCrateDBConverter.decode_canonical` to also
   decode non-UUID binary values
+- Zyp/Moksha/jq: `to_object` function now respects a `zap` option, that
+  removes the element altogether if it's empty
 
 ## 2024/09/22 v0.0.17
 - MongoDB: Fixed edge case when decoding MongoDB Extended JSON elements
