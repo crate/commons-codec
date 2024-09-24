@@ -2,7 +2,8 @@
 A few samples of MongoDB BSON / JSON structures.
 
 Derived from:
-https://github.com/mongodb/bson-ruby/tree/v5.0.1/spec/spec_tests/data/corpus
+- https://github.com/mongodb/mongo-java-driver/tree/master/bson/src/test/resources/bson
+- https://github.com/mongodb/bson-ruby/tree/v5.0.1/spec/spec_tests/data/corpus
 """
 # ruff: noqa: ERA001
 
@@ -199,13 +200,13 @@ RECORD_OUT_ALL_TYPES = {
         "list_uuid": [
             # TODO: TypeError: Object of type bytes is not JSON serializable
             # b's\xff\xd2dD\xb3Li\x90\xe8\xe7\xd1\xdf\xc05\xd4',
-            "b's\\xff\\xd2dD\\xb3Li\\x90\\xe8\\xe7\\xd1\\xdf\\xc05\\xd4'",
-            "b's\\xff\\xd2dD\\xb3Li\\x90\\xe8\\xe7\\xd1\\xdf\\xc05\\xd4'",
-            "b's\\xff\\xd2dD\\xb3Li\\x90\\xe8\\xe7\\xd1\\xdf\\xc05\\xd4'",
+            "c//SZESzTGmQ6OfR38A11A==",
+            "c//SZESzTGmQ6OfR38A11A==",
+            "c//SZESzTGmQ6OfR38A11A==",
             "73ffc060-30b8-db47-2c20-8dfddbde3cdc",
-            "b's\\xff\\xc0`0\\xb8\\xdbG, \\x8d\\xfd\\xdb\\xde<\\xdc'",
-            "b's\\xff\\xc0`0\\xb8\\xdbG, \\x8d\\xfd\\xdb\\xde<\\xdc'",
-            "b's\\xff\\xc0`0\\xb8\\xdbG, \\x8d\\xfd\\xdb\\xde<\\xdc'",
+            "c//AYDC420csII3929483A==",
+            "c//AYDC420csII3929483A==",
+            "c//AYDC420csII3929483A==",
         ],
         "maxkey": "MaxKey()",
         "minkey": "MinKey()",

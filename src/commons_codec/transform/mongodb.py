@@ -1,6 +1,7 @@
 # Copyright (c) 2021-2024, Crate.io Inc.
 # Distributed under the terms of the LGPLv3 license, see LICENSE.
 # ruff: noqa: S608
+import base64
 import calendar
 import datetime as dt
 import logging
@@ -125,6 +126,8 @@ class MongoDBCrateDBConverter:
         is_bson = type(value).__module__.startswith("bson")
         if isinstance(value, bson.Binary) and value.subtype == bson.UUID_SUBTYPE:
             value = value.as_uuid()
+        elif isinstance(value, bson.Binary):
+            value = base64.b64encode(value).decode()
         if isinstance(value, bson.Timestamp):
             value = value.as_datetime()
         if isinstance(value, dt.datetime):

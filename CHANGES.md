@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- MongoDB: Improved `MongoDBCrateDBConverter.decode_canonical` to also
+  decode non-UUID binary values
 
 ## 2024/09/22 v0.0.17
 - MongoDB: Fixed edge case when decoding MongoDB Extended JSON elements
