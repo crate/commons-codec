@@ -43,7 +43,11 @@ def make_translator(kind: str) -> MongoDBFullLoadTranslator:
             .jq(".[] |= (.python.to_list |= to_array)")
             .jq(".[] |= (.python.to_string |= tostring)")
         )
-    converter = MongoDBCrateDBConverter(transformation=transformation)
+    converter = MongoDBCrateDBConverter(
+        timestamp_to_epoch=True,
+        timestamp_use_milliseconds=True,
+        transformation=transformation,
+    )
     translator = MongoDBFullLoadTranslator(table_name="from.mongodb", converter=converter)
     return translator
 

@@ -6,6 +6,7 @@ import calendar
 import datetime as dt
 import logging
 import typing as t
+from functools import cached_property
 from typing import Iterable
 
 import bson
@@ -24,18 +25,6 @@ DocumentCollection = t.List[Document]
 logger = logging.getLogger(__name__)
 
 
-def date_converter(value):
-    if isinstance(value, int):
-        return value
-    elif isinstance(value, (str, bytes)):
-        datetime = dateparser.parse(value)
-    elif isinstance(value, dt.datetime):
-        datetime = value
-    else:
-        raise ValueError(f"Unable to convert datetime value: {value}")
-    return calendar.timegm(datetime.utctimetuple()) * 1000
-
-
 @define
 class MongoDBCrateDBConverter:
     """
@@ -44,6 +33,9 @@ class MongoDBCrateDBConverter:
     Extracted from cratedb-toolkit, earlier migr8.
     """
 
+    timestamp_to_epoch: bool = False
+    timestamp_to_iso8601: bool = False
+    timestamp_use_milliseconds: bool = False
     transformation: t.Any = None
 
     def decode_documents(self, data: t.Iterable[Document]) -> Iterable[Document]:
@@ -73,7 +65,7 @@ class MongoDBCrateDBConverter:
         if isinstance(value, dict):
             # Decode item in BSON CANONICAL format.
             if len(value) == 1 and next(iter(value)).startswith("$"):
-                return self.decode_canonical(value)
+                return self.decode_extended_json(value)
 
             # Custom adjustments to compensate shape anomalies in source data.
             # TODO: Review if it can be removed or refactored.
@@ -111,32 +103,81 @@ class MongoDBCrateDBConverter:
         """
         return _json_convert(item)
 
-    @staticmethod
-    def decode_canonical(value: t.Dict[str, t.Any]) -> t.Any:
+    def decode_extended_json(self, value: t.Dict[str, t.Any]) -> t.Any:
         """
-        Decode MongoDB Extended JSON CANONICAL representation.
+        Decode MongoDB Extended JSON representation, canonical and legacy variants.
         """
-        type_ = list(value.keys())[0]
+
+        out: t.Any
+
         # Special handling for datetime representation in NUMBERLONG format (emulated depth-first).
+        type_ = next(iter(value))  # Get key of first item in dictionary.
         is_date_numberlong = type_ == "$date" and "$numberLong" in value["$date"]
         if is_date_numberlong:
-            return int(object_hook(value["$date"]))
+            out = dt.datetime.fromtimestamp(int(value["$date"]["$numberLong"]) / 1000, tz=dt.timezone.utc)
         else:
-            value = object_hook(value)
-        is_bson = type(value).__module__.startswith("bson")
+            out = object_hook(value)
 
-        out: t.Any = value
-        if isinstance(value, bson.Binary) and value.subtype == bson.UUID_SUBTYPE:
-            out = value.as_uuid()
-        elif isinstance(value, bson.Binary):
-            out = base64.b64encode(value).decode()
-        elif isinstance(value, bson.Timestamp):
-            out = value.as_datetime()
+        is_bson = isinstance(out, self.all_bson_types)
+
+        # Decode BSON types.
+        if isinstance(out, bson.Binary) and out.subtype == bson.UUID_SUBTYPE:
+            out = out.as_uuid()
+        elif isinstance(out, bson.Binary):
+            out = base64.b64encode(out).decode()
+        elif isinstance(out, bson.Timestamp):
+            out = out.as_datetime()
+
+        # Decode Python types.
         if isinstance(out, dt.datetime):
-            return date_converter(out)
+            if self.timestamp_to_epoch:
+                out = self.convert_epoch(out)
+                if self.timestamp_use_milliseconds:
+                    out *= 1000
+                return out
+            elif self.timestamp_to_iso8601:
+                return self.convert_iso8601(out)
+
+        # Wrap up decoded BSON types as strings.
         if is_bson:
             return str(out)
+
+        # Return others converted as-is.
         return out
+
+    @cached_property
+    def all_bson_types(self) -> t.Tuple[t.Type, ...]:
+        _types: t.List[t.Type] = []
+        for _typ in bson._ENCODERS:
+            if hasattr(_typ, "_type_marker"):
+                _types.append(_typ)
+        return tuple(_types)
+
+    @staticmethod
+    def convert_epoch(value: t.Any) -> float:
+        if isinstance(value, int):
+            return value
+        elif isinstance(value, dt.datetime):
+            datetime = value
+        elif isinstance(value, (str, bytes)):
+            datetime = dateparser.parse(value)
+        else:
+            raise ValueError(f"Unable to convert datetime value: {value}")
+        return calendar.timegm(datetime.utctimetuple())
+
+    @staticmethod
+    def convert_iso8601(value: t.Any) -> str:
+        if isinstance(value, str):
+            return value
+        elif isinstance(value, dt.datetime):
+            datetime = value
+        elif isinstance(value, bytes):
+            return value.decode("utf-8")
+        elif isinstance(value, int):
+            datetime = dt.datetime.fromtimestamp(value, tz=dt.timezone.utc)
+        else:
+            raise ValueError(f"Unable to convert datetime value: {value}")
+        return datetime.isoformat()
 
     def apply_special_treatments(self, value: t.Any):
         """
@@ -176,7 +217,7 @@ class MongoDBTranslatorBase:
 
     def __init__(self, table_name: str, converter: t.Union[MongoDBCrateDBConverter, None] = None):
         self.table_name = quote_relation_name(table_name)
-        self.converter = converter or MongoDBCrateDBConverter()
+        self.converter = converter or MongoDBCrateDBConverter(timestamp_to_epoch=True, timestamp_use_milliseconds=True)
 
     @property
     def sql_ddl(self):
