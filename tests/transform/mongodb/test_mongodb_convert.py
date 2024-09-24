@@ -28,8 +28,8 @@ def test_epoch_ms_converter_iso8601():
     """
     Datetime values encoded as ISO8601 values will be parsed.
     """
-    assert convert_epoch("2015-09-23T10:32:42.33Z") == 1443004362
-    assert convert_epoch(b"2015-09-23T10:32:42.33Z") == 1443004362
+    assert convert_epoch("2015-09-23T10:32:42.33Z") == 1443004362.33
+    assert convert_epoch(b"2015-09-23T10:32:42.33Z") == 1443004362.33
 
 
 def test_epoch_ms_converter_invalid():
@@ -109,12 +109,12 @@ testdata = [
     DateConversionCase(
         converter=MongoDBCrateDBConverter(timestamp_to_epoch=True, timestamp_use_milliseconds=True),
         data_in={"$date": "2015-09-23T10:32:42.123456Z"},
-        data_out=1443004362000,
+        data_out=1442997162123,
     ),
     DateConversionCase(
         converter=MongoDBCrateDBConverter(timestamp_to_epoch=True, timestamp_use_milliseconds=True),
         data_in={"$date": {"$numberLong": "1655210544987"}},
-        data_out=1655210544000,
+        data_out=1655210544987,
     ),
     DateConversionCase(
         converter=MongoDBCrateDBConverter(timestamp_to_iso8601=True),
@@ -168,7 +168,7 @@ def test_convert_with_treatment_ignore_complex_lists():
         "_id": "56027fcae4b09385a85f9344",
         "value": {
             "id": 42,
-            "date": 1443004362000,
+            "date": 1442997162330,
         },
     }
 
@@ -203,7 +203,7 @@ def test_convert_with_treatment_normalize_complex_lists():
         "_id": "56027fcae4b09385a85f9344",
         "value": {
             "id": 42,
-            "date": 1443004362000,
+            "date": 1442997162330,
             "some_complex_list": [
                 {"id": "foo", "value": "something"},
                 # FIXME: `normalize_complex_lists` does not see it's a timestamp.
@@ -244,7 +244,7 @@ def test_convert_with_treatment_all_options():
     data_out = {
         "_id": "56027fcae4b09385a85f9344",
         "value": {
-            "date": 1443004362000,
+            "date": 1442997162330,
             "id": 42,
         },
         "to_list": [42],

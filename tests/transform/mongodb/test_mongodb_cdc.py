@@ -126,7 +126,7 @@ def test_decode_cdc_insert():
                 "_id": "669683c2b0750b2c84893f3e",
                 "id": "5F9E",
                 "data": {"temperature": 42.42, "humidity": 84.84},
-                "meta": {"timestamp": 1720739862000, "device": "foo"},
+                "meta": {"timestamp": 1720732662000, "device": "foo"},
             },
         },
     )
@@ -140,7 +140,7 @@ def test_decode_cdc_update():
                 "_id": "669683c2b0750b2c84893f3e",
                 "id": "5F9E",
                 "data": {"temperature": 42.5},
-                "meta": {"timestamp": 1720739862000, "device": "foo"},
+                "meta": {"timestamp": 1720732662000, "device": "foo"},
             }
         },
     )

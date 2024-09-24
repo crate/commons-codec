@@ -7,6 +7,7 @@
   removes the element altogether if it's empty
 - Zyp/Moksha/jq: Improve error reporting at `MokshaTransformation.apply`
 - MongoDB: Improved `MongoDBCrateDBConverter.decode_extended_json`
+- MongoDB: Fixed timestamp conversion
 
 ## 2024/09/22 v0.0.17
 - MongoDB: Fixed edge case when decoding MongoDB Extended JSON elements

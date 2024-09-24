@@ -2,7 +2,6 @@
 # Distributed under the terms of the LGPLv3 license, see LICENSE.
 # ruff: noqa: S608
 import base64
-import calendar
 import datetime as dt
 import logging
 import typing as t
@@ -134,7 +133,7 @@ class MongoDBCrateDBConverter:
                 out = self.convert_epoch(out)
                 if self.timestamp_use_milliseconds:
                     out *= 1000
-                return out
+                return int(out)
             elif self.timestamp_to_iso8601:
                 return self.convert_iso8601(out)
 
@@ -163,7 +162,7 @@ class MongoDBCrateDBConverter:
             datetime = dateparser.parse(value)
         else:
             raise ValueError(f"Unable to convert datetime value: {value}")
-        return calendar.timegm(datetime.utctimetuple())
+        return datetime.timestamp()
 
     @staticmethod
     def convert_iso8601(value: t.Any) -> str:

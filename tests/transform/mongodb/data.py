@@ -115,7 +115,7 @@ RECORD_OUT_ALL_TYPES = {
     "_id": "56027fcae4b09385a85f9344",
     "python": {
         "boolean": True,
-        "datetime": 1721140162000,
+        "datetime": 1721132962907,
         "dict_basic": {"foo": "bar"},
         "dict_dollarkey": {"$a": "foo"},
         # "dict_dottedkey": {'a.b': 'foo'},  # TODO: InvalidColumnNameException["." contains a dot]
@@ -144,7 +144,7 @@ RECORD_OUT_ALL_TYPES = {
                 "foo": "bar",
             },
         },
-        "datetimems": 1721140162000,
+        "datetimems": 1721132962987,
         "binary_uuid": "73636373-6363-7363-6373-636373636373",
         "decimal128": "42.42",
         "dbref": {
@@ -168,7 +168,7 @@ RECORD_OUT_ALL_TYPES = {
                 "x": 42,
             },
         },
-        "date_iso8601": 1443004362000,
+        "date_iso8601": 1442997162330,
         "date_numberlong": 1356351330000,
         "dbref": {
             "$id": "56027fcae4b09385a85f9344",
@@ -183,13 +183,13 @@ RECORD_OUT_ALL_TYPES = {
         "int32": -2147483648,
         "int64": "-9223372036854775808",  # TODO: Representation as string is just fine?
         "list_date": [
-            1443090762000,
+            1443083562330,
             2147483647000,
             -2147483648000,
         ],
         "list_dict": [
-            {"id": "bar", "value": 1443090762000},
-            {"value": 1443090762000},
+            {"id": "bar", "value": 1443083562330},
+            {"value": 1443083562330},
         ],
         "list_int": [
             -2147483648,
