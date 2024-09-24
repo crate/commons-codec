@@ -15,6 +15,28 @@
 - [ ] Documentation: Usage (build (API, from_yaml), apply)
 - [ ] Documentation: How to extend `function.{jq,py}`
 
+### Documentation
+```
+- Omit records `and .value.bill_contact.id != ""`
+# Only accept `email` elements that are objects.
+#and (if (.value | index("emails")) then (.value.emails[].type | type) == "object" else true end)
+
+# Exclude a few specific documents.
+# TODO: Review documents once more to discover more edge cases.
+.[] |= select(
+and ._id != "55d71c8ce4b02210dc47b10f"
+)
+
+# Some early `phone` elements have been stored wrongly,
+# all others are of type OBJECT.
+#and (.value.phone | type) != "array"
+
+# Some early `urls` elements have been stored wrongly,
+# all others are of type ARRAY.
+#and (.value.urls | type) != "object"
+```
+
+
 ## Iteration +2
 - [ ] CLI interface
 - [ ] Documentation: Add Python example to "Synopsis" section on /index.html
@@ -58,6 +80,8 @@ Demonstrate more use cases, like...
   - https://github.com/meltano/sdk/blob/v0.39.1/singer_sdk/mapper.py
 - [ ] Is `jqpy` better than `jq`?
   - https://baterflyrity.github.io/jqpy/
+- [ ] Load XML via Badgerfish or KDL
+  https://github.com/kdl-org/kdl
 
 ## Done
 - [x] Refactor module namespace to `zyp`
