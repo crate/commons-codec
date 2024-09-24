@@ -1,34 +1,65 @@
+import re
+
 import pytest
 from jmespath.exceptions import ParseError
 
 from zyp.model.moksha import MokshaRule, MokshaTransformation
 
 
-def test_moksha_rule():
-    moksha = MokshaRule(type="jmes", expression="@").compile()
+def test_moksha_rule_compile_success():
+    rule = MokshaRule(type="jmes", expression="@")
+    moksha = rule.compile()
     assert moksha.transformer.expression == "@"
     assert moksha.transformer.parsed == {"type": "current", "children": []}
 
 
-def test_moksha_runtime_rule_success():
-    assert MokshaRule(type="jmes", expression="@").compile().evaluate(42.42) == 42.42
-
-
-def test_moksha_runtime_rule_syntax_error():
+def test_moksha_rule_compile_syntax_error_jmes():
     with pytest.raises(ParseError) as ex:
         MokshaRule(type="jmes", expression="@foo").compile()
     assert ex.match("Unexpected token: foo")
 
 
-def test_moksha_runtime_rule_invalid_transformer():
-    rule = MokshaRule(type="jmes", expression="@").compile()
-    rule.transformer = "foo"
+def test_moksha_rule_compile_syntax_error_jq():
+    with pytest.raises(ValueError) as ex:
+        MokshaRule(type="jq", expression="foo").compile()
+    assert ex.match("jq: error: foo/0 is not defined at <top-level>, line 1")
+
+
+def test_moksha_rule_evaluate_success_jmes():
+    rule = MokshaRule(type="jmes", expression="@")
+    assert rule.compile().evaluate(42.42) == 42.42
+
+
+def test_moksha_rule_evaluate_success_jq():
+    rule = MokshaRule(type="jq", expression=".")
+    assert rule.compile().evaluate(42.42) == 42.42
+
+
+def test_moksha_rule_evaluate_invalid_transformer():
+    rule = MokshaRule(type="jmes", expression="@")
+    compiled = rule.compile()
+    compiled.transformer = "foo"
     with pytest.raises(TypeError) as ex:
-        rule.evaluate(42.42)
+        compiled.evaluate(42.42)
     assert ex.match("Evaluation failed. Type must be either jmes or jq or transon: foo")
 
 
-def test_moksha_empty():
+def test_moksha_transformation_success_jq():
+    moksha = MokshaTransformation().jq(". /= 100")
+    assert moksha.apply(4242) == 42.42
+
+
+def test_moksha_transformation_error_jq(caplog):
+    moksha = MokshaTransformation().jq(". /= 100")
+    with pytest.raises(ValueError) as ex:
+        moksha.apply("foo")
+    assert ex.match(re.escape('string ("foo") and number (100) cannot be divided'))
+
+    assert "Error evaluating rule: MokshaRuntimeRule(type='jq'" in caplog.text
+    assert "Error payload:\nfoo" in caplog.messages
+
+
+def test_moksha_transformation_empty():
     """
     Empty JSON Pointer expression means "root node".
     """

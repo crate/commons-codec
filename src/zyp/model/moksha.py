@@ -1,4 +1,5 @@
 import collections
+import logging
 import typing as t
 
 import jmespath
@@ -10,6 +11,8 @@ from attrs import define
 from zyp.model.base import DictOrList
 from zyp.model.bucket import ConverterBase, MokshaTransformer, TransonTemplate
 from zyp.util.expression import compile_expression
+
+logger = logging.getLogger(__name__)
 
 
 @define
@@ -69,7 +72,12 @@ class MokshaTransformation(ConverterBase):
         self._add_rule(MokshaRule(type="transon", expression=expression))
         return self
 
-    def apply(self, data: DictOrList) -> DictOrList:
+    def apply(self, data: t.Any) -> t.Any:
         for rule in self._runtime_rules:
-            data = rule.evaluate(data)
+            try:
+                data = rule.evaluate(data)
+            except Exception:
+                logger.exception(f"Error evaluating rule: {rule}")
+                logger.debug(f"Error payload:\n{data}")
+                raise
         return data
