@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## 2024/09/26 v0.0.19
 - DynamoDB CDC: Fix `MODIFY` operation by propagating `NewImage` fully
 - Zyp/Moksha: Improve error reporting when rule evaluation fails
 
