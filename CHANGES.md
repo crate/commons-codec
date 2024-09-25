@@ -2,6 +2,7 @@
 
 ## Unreleased
 - DynamoDB CDC: Fix `MODIFY` operation by propagating `NewImage` fully
+- Zyp/Moksha: Improve error reporting when rule evaluation fails
 
 ## 2024/09/25 v0.0.18
 - MongoDB: Improved `MongoDBCrateDBConverter.decode_canonical` to also
