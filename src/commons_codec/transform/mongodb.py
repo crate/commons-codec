@@ -6,7 +6,7 @@ import calendar
 import datetime as dt
 import logging
 import typing as t
-from functools import cached_property
+from functools import lru_cache
 from typing import Iterable
 
 import bson
@@ -23,6 +23,15 @@ DocumentCollection = t.List[Document]
 
 
 logger = logging.getLogger(__name__)
+
+
+@lru_cache()
+def all_bson_types() -> t.Tuple[t.Type, ...]:
+    _types: t.List[t.Type] = []
+    for _typ in bson._ENCODERS:
+        if hasattr(_typ, "_type_marker"):
+            _types.append(_typ)
+    return tuple(_types)
 
 
 @define
@@ -118,7 +127,7 @@ class MongoDBCrateDBConverter:
         else:
             out = object_hook(value)
 
-        is_bson = isinstance(out, self.all_bson_types)
+        is_bson = isinstance(out, all_bson_types())
 
         # Decode BSON types.
         if isinstance(out, bson.Binary) and out.subtype == bson.UUID_SUBTYPE:
@@ -144,14 +153,6 @@ class MongoDBCrateDBConverter:
 
         # Return others converted as-is.
         return out
-
-    @cached_property
-    def all_bson_types(self) -> t.Tuple[t.Type, ...]:
-        _types: t.List[t.Type] = []
-        for _typ in bson._ENCODERS:
-            if hasattr(_typ, "_type_marker"):
-                _types.append(_typ)
-        return tuple(_types)
 
     @staticmethod
     def convert_epoch(value: t.Any) -> float:
