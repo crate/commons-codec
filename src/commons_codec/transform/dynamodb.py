@@ -10,7 +10,6 @@ from sqlalchemy_cratedb.support import quote_relation_name
 from commons_codec.model import (
     DualRecord,
     SQLOperation,
-    SQLParameterizedSetClause,
     SQLParameterizedWhereClause,
 )
 from commons_codec.util.data import TaggableList
@@ -182,11 +181,14 @@ class DynamoDBCDCTranslator(DynamoTranslatorBase):
                 del new_image[key]
 
             dual_record = self.decode_record(event["dynamodb"]["NewImage"])
-            set_clause = self.update_clause(dual_record)
 
             where_clause = self.keys_to_where(event["dynamodb"]["Keys"])
-            sql = f"UPDATE {self.table_name} SET {set_clause.to_sql()} WHERE {where_clause.to_sql()};"
-            parameters = set_clause.values  # noqa: PD011
+            sql = (
+                f"UPDATE {self.table_name} "
+                f"SET {self.TYPED_COLUMN}=:typed, {self.UNTYPED_COLUMN}=:untyped "
+                f"WHERE {where_clause.to_sql()};"
+            )
+            parameters = {"typed": dual_record.typed, "untyped": dual_record.untyped}
             parameters.update(where_clause.values)
 
         elif event_name == "REMOVE":
@@ -198,35 +200,6 @@ class DynamoDBCDCTranslator(DynamoTranslatorBase):
             raise ValueError(f"Unknown CDC event name: {event_name}")
 
         return SQLOperation(sql, parameters)
-
-    def update_clause(self, dual_record: DualRecord) -> SQLParameterizedSetClause:
-        """
-        Serializes an image to a comma-separated list of column/values pairs
-        that can be used in the `SET` clause of an `UPDATE` statement.
-
-        IN:
-        {'humidity': {'N': '84.84'}, 'temperature': {'N': '55.66'}}
-
-        OUT:
-        data['humidity'] = '84.84', data['temperature'] = '55.66'
-        """
-
-        clause = SQLParameterizedSetClause()
-        self.record_to_set_clause(dual_record.typed, self.TYPED_COLUMN, clause)
-        self.record_to_set_clause(dual_record.untyped, self.UNTYPED_COLUMN, clause)
-        return clause
-
-    @staticmethod
-    def record_to_set_clause(record: t.Dict[str, t.Any], container_column: str, clause: SQLParameterizedSetClause):
-        for column, value in record.items():
-            rval = None
-            if isinstance(value, dict):
-                rval = f"CAST(:{column} AS OBJECT)"
-
-            elif isinstance(value, list) and value and isinstance(value[0], dict):
-                rval = f"CAST(:{column} AS OBJECT[])"
-
-            clause.add(lval=f"{container_column}['{column}']", name=column, value=value, rval=rval)
 
     def keys_to_where(self, keys: t.Dict[str, t.Dict[str, str]]) -> SQLParameterizedWhereClause:
         """

@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- DynamoDB CDC: Fix `MODIFY` operation by propagating `NewImage` fully
 
 ## 2024/09/25 v0.0.18
 - MongoDB: Improved `MongoDBCrateDBConverter.decode_canonical` to also

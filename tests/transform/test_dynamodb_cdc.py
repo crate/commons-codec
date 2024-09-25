@@ -8,7 +8,6 @@ from commons_codec.transform.dynamodb import CrateDBTypeDeserializer, DynamoDBCD
 
 pytestmark = pytest.mark.dynamodb
 
-
 READING_BASIC = {"device": "foo", "temperature": 42.42, "humidity": 84.84}
 
 MSG_UNKNOWN_SOURCE = {
@@ -240,44 +239,44 @@ def test_decode_cdc_insert_nested():
 
 def test_decode_cdc_modify_basic():
     assert DynamoDBCDCTranslator(table_name="foo").to_sql(MSG_MODIFY_BASIC) == SQLOperation(
-        statement="UPDATE foo SET "
-        "data['humidity']=:humidity, data['temperature']=:temperature, data['location']=:location, "
-        "data['string_set']=:string_set, data['number_set']=:number_set, data['binary_set']=:binary_set, "
-        "data['empty_string']=:empty_string, data['null_string']=:null_string "
+        statement="UPDATE foo SET data=:typed, aux=:untyped "
         "WHERE data['device']=:device AND data['timestamp']=:timestamp;",
         parameters={
             "device": "foo",
             "timestamp": "2024-07-12T01:17:42",
-            "humidity": 84.84,
-            "temperature": 55.66,
-            "location": "Sydney",
-            "string_set": ["location_1"],
-            "number_set": [0.34, 1.0, 2.0, 3.0],
-            "binary_set": ["U3Vubnk="],
-            "empty_string": "",
-            "null_string": None,
+            "typed": {
+                "humidity": 84.84,
+                "temperature": 55.66,
+                "location": "Sydney",
+                "string_set": ["location_1"],
+                "number_set": [0.34, 1.0, 2.0, 3.0],
+                "binary_set": ["U3Vubnk="],
+                "empty_string": "",
+                "null_string": None,
+            },
+            "untyped": {},
         },
     )
 
 
 def test_decode_cdc_modify_nested():
     assert DynamoDBCDCTranslator(table_name="foo").to_sql(MSG_MODIFY_NESTED) == SQLOperation(
-        statement="UPDATE foo SET "
-        "data['tags']=:tags, data['empty_map']=CAST(:empty_map AS OBJECT), data['empty_list']=:empty_list, "
-        "data['string_set']=:string_set, data['number_set']=:number_set, data['binary_set']=:binary_set, "
-        "data['somemap']=CAST(:somemap AS OBJECT), data['list_of_objects']=CAST(:list_of_objects AS OBJECT[]) "
+        statement="UPDATE foo SET data=:typed, aux=:untyped "
         "WHERE data['device']=:device AND data['timestamp']=:timestamp;",
         parameters={
             "device": "foo",
             "timestamp": "2024-07-12T01:17:42",
-            "tags": ["foo", "bar"],
-            "empty_map": {},
-            "empty_list": [],
-            "string_set": ["location_1"],
-            "number_set": [0.34, 1.0, 2.0, 3.0],
-            "binary_set": ["U3Vubnk="],
-            "somemap": {"test": 1.0, "test2": 2.0},
-            "list_of_objects": [{"foo": "bar"}, {"baz": "qux"}],
+            "typed": {
+                "tags": ["foo", "bar"],
+                "empty_map": {},
+                "empty_list": [],
+                "string_set": ["location_1"],
+                "number_set": [0.34, 1.0, 2.0, 3.0],
+                "binary_set": ["U3Vubnk="],
+                "somemap": {"test": 1.0, "test2": 2.0},
+                "list_of_objects": [{"foo": "bar"}, {"baz": "qux"}],
+            },
+            "untyped": {},
         },
     )
 
