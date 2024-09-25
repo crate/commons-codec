@@ -78,6 +78,8 @@ class MokshaTransformation(ConverterBase):
                 data = rule.evaluate(data)
             except Exception:
                 logger.exception(f"Error evaluating rule: {rule}")
+                if isinstance(data, map):
+                    data = list(data)
                 logger.debug(f"Error payload:\n{data}")
                 raise
         return data

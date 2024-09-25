@@ -49,7 +49,7 @@ def test_moksha_transformation_success_jq():
     assert moksha.apply(4242) == 42.42
 
 
-def test_moksha_transformation_error_jq(caplog):
+def test_moksha_transformation_error_jq_scalar(caplog):
     moksha = MokshaTransformation().jq(". /= 100")
     with pytest.raises(ValueError) as ex:
         moksha.apply("foo")
@@ -57,6 +57,16 @@ def test_moksha_transformation_error_jq(caplog):
 
     assert "Error evaluating rule: MokshaRuntimeRule(type='jq'" in caplog.text
     assert "Error payload:\nfoo" in caplog.messages
+
+
+def test_moksha_transformation_error_jq_map(caplog):
+    moksha = MokshaTransformation().jq(".foo")
+    with pytest.raises(ValueError) as ex:
+        moksha.apply(map(lambda x: x, ["foo"]))  # noqa: C417
+    assert ex.match(re.escape('Cannot index array with string "foo"'))
+
+    assert "Error evaluating rule: MokshaRuntimeRule(type='jq'" in caplog.text
+    assert "Error payload:\n[]" in caplog.messages
 
 
 def test_moksha_transformation_empty():
