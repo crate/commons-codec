@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## 2024/09/25 v0.0.18
 - MongoDB: Improved `MongoDBCrateDBConverter.decode_canonical` to also
   decode non-UUID binary values
 - Zyp/Moksha/jq: `to_object` function now respects a `zap` option, that
