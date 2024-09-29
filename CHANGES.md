@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- DynamoDB: Change CrateDB data model to use (`pk`, `data`, `aux`) columns
+  Attention: This is a breaking change.
 
 ## 2024/09/26 v0.0.19
 - DynamoDB CDC: Fix `MODIFY` operation by propagating `NewImage` fully
