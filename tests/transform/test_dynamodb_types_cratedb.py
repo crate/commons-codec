@@ -3,8 +3,8 @@ from decimal import Decimal
 
 import pytest
 
-from commons_codec.model import DualRecord
-from commons_codec.transform.dynamodb import CrateDBTypeDeserializer, DynamoDBCDCTranslator
+from commons_codec.model import UniversalRecord
+from commons_codec.transform.dynamodb import CrateDBTypeDeserializer
 
 pytestmark = pytest.mark.dynamodb
 
@@ -21,7 +21,7 @@ class TestDeserializer(unittest.TestCase):
         ]
 
 
-def test_decode_typed_untyped():
-    assert DynamoDBCDCTranslator(table_name="foo").decode_record(
+def test_decode_typed_untyped(dynamodb_cdc_translator_foo):
+    assert dynamodb_cdc_translator_foo.decode_record(
         {"foo": {"N": "84.84"}, "bar": {"L": [{"N": "1"}, {"S": "foo"}]}}
-    ) == DualRecord(typed={"foo": 84.84}, untyped={"bar": [1.0, "foo"]})
+    ) == UniversalRecord(pk={}, typed={"foo": 84.84}, untyped={"bar": [1.0, "foo"]})

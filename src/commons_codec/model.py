@@ -131,14 +131,15 @@ class SQLParameterizedWhereClause(SQLParameterizedClause):
 
 
 @define
-class DualRecord:
+class UniversalRecord:
     """
-    Manage two halves of a record.
+    Manage a universal record including primary keys and two halves of a record.
     One bucket stores the typed fields, the other stores the untyped ones.
     """
 
+    pk: t.Dict[str, t.Any]
     typed: t.Dict[str, t.Any]
     untyped: t.Dict[str, t.Any]
 
     def to_dict(self):
-        return {"typed": self.typed, "untyped": self.untyped}
+        return {"pk": self.pk, "typed": self.typed, "untyped": self.untyped}

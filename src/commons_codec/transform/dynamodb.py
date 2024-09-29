@@ -8,10 +8,10 @@ import toolz
 from sqlalchemy_cratedb.support import quote_relation_name
 
 from commons_codec.model import (
-    DualRecord,
     SQLOperation,
-    SQLParameterizedWhereClause,
+    UniversalRecord,
 )
+from commons_codec.transform.dynamodb_model import PrimaryKeySchema
 from commons_codec.util.data import TaggableList
 from commons_codec.vendor.boto3.dynamodb.types import DYNAMODB_CONTEXT, TypeDeserializer
 
@@ -73,6 +73,10 @@ class DynamoTranslatorBase:
     Translate DynamoDB records into a different representation.
     """
 
+    # Define name of the column where KeySchema DynamoDB fields will get materialized into.
+    # This column uses the `OBJECT(DYNAMIC)` data type.
+    PK_COLUMN = "pk"
+
     # Define name of the column where typed DynamoDB fields will get materialized into.
     # This column uses the `OBJECT(DYNAMIC)` data type.
     TYPED_COLUMN = "data"
@@ -81,9 +85,10 @@ class DynamoTranslatorBase:
     # This column uses the `OBJECT(IGNORED)` data type.
     UNTYPED_COLUMN = "aux"
 
-    def __init__(self, table_name: str):
+    def __init__(self, table_name: str, primary_key_schema: PrimaryKeySchema = None):
         super().__init__()
         self.table_name = quote_relation_name(table_name)
+        self.primary_key_schema = primary_key_schema
         self.deserializer = CrateDBTypeDeserializer()
 
     @property
@@ -91,12 +96,16 @@ class DynamoTranslatorBase:
         """`
         Define SQL DDL statement for creating table in CrateDB that stores re-materialized CDC events.
         """
+        if self.primary_key_schema is None:
+            raise IOError("Unable to generate SQL DDL without key schema information")
         return (
-            f"CREATE TABLE IF NOT EXISTS {self.table_name} "
-            f"({self.TYPED_COLUMN} OBJECT(DYNAMIC), {self.UNTYPED_COLUMN} OBJECT(IGNORED));"
+            f"CREATE TABLE IF NOT EXISTS {self.table_name} ("
+            f"{self.PK_COLUMN} OBJECT(STRICT) AS ({', '.join(self.primary_key_schema.to_sql_ddl_clauses())}), "
+            f"{self.TYPED_COLUMN} OBJECT(DYNAMIC), "
+            f"{self.UNTYPED_COLUMN} OBJECT(IGNORED));"
         )
 
-    def decode_record(self, item: t.Dict[str, t.Any]) -> DualRecord:
+    def decode_record(self, item: t.Dict[str, t.Any], key_names: t.Union[t.List[str], None] = None) -> UniversalRecord:
         """
         Deserialize DynamoDB JSON record into vanilla Python.
 
@@ -124,12 +133,20 @@ class DynamoTranslatorBase:
         -- https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypeDescriptors
         """
         record = toolz.valmap(self.deserializer.deserialize, item)
+
+        pk = {}
         untyped = {}
+        pk_names = key_names or []
+        if not pk_names and self.primary_key_schema is not None:
+            pk_names = self.primary_key_schema.keys()
         for key, value in record.items():
+            if key in pk_names:
+                pk[key] = value
             if isinstance(value, TaggableList) and value.get_tag("varied", False):
                 untyped[key] = value
+        record = toolz.dissoc(record, *pk.keys())
         record = toolz.dissoc(record, *untyped.keys())
-        return DualRecord(typed=record, untyped=untyped)
+        return UniversalRecord(pk=pk, typed=record, untyped=untyped)
 
 
 class DynamoDBFullLoadTranslator(DynamoTranslatorBase):
@@ -137,7 +154,16 @@ class DynamoDBFullLoadTranslator(DynamoTranslatorBase):
         """
         Produce INSERT SQL operations (SQL statement and parameters) from DynamoDB record(s).
         """
-        sql = f"INSERT INTO {self.table_name} ({self.TYPED_COLUMN}, {self.UNTYPED_COLUMN}) VALUES (:typed, :untyped);"
+        sql = (
+            f"INSERT INTO {self.table_name} ("
+            f"{self.PK_COLUMN}, "
+            f"{self.TYPED_COLUMN}, "
+            f"{self.UNTYPED_COLUMN}"
+            f") VALUES ("
+            f":pk, "
+            f":typed, "
+            f":untyped);"
+        )
         if not isinstance(data, list):
             data = [data]
         parameters = [self.decode_record(record).to_dict() for record in data]
@@ -166,56 +192,43 @@ class DynamoDBCDCTranslator(DynamoTranslatorBase):
             raise ValueError(f"Unknown eventSource: {event_source}")
 
         if event_name == "INSERT":
-            dual_record = self.decode_record(event["dynamodb"]["NewImage"])
+            record = self.decode_event(event["dynamodb"])
             sql = (
-                f"INSERT INTO {self.table_name} ({self.TYPED_COLUMN}, {self.UNTYPED_COLUMN}) VALUES (:typed, :untyped);"
+                f"INSERT INTO {self.table_name} ("
+                f"{self.PK_COLUMN}, "
+                f"{self.TYPED_COLUMN}, "
+                f"{self.UNTYPED_COLUMN}"
+                f") VALUES ("
+                f":pk, "
+                f":typed, "
+                f":untyped);"
             )
-            parameters = {"typed": dual_record.typed, "untyped": dual_record.untyped}
+            parameters = record.to_dict()
 
         elif event_name == "MODIFY":
-            new_image = event["dynamodb"]["NewImage"]
-            # Drop primary key columns to not update them.
-            # Primary key values should be identical (if chosen identical in DynamoDB and CrateDB),
-            # but CrateDB does not allow having them in an UPDATE's SET clause.
-            for key in event["dynamodb"]["Keys"]:
-                del new_image[key]
-
-            dual_record = self.decode_record(event["dynamodb"]["NewImage"])
-
-            where_clause = self.keys_to_where(event["dynamodb"]["Keys"])
+            record = self.decode_event(event["dynamodb"])
             sql = (
                 f"UPDATE {self.table_name} "
                 f"SET {self.TYPED_COLUMN}=:typed, {self.UNTYPED_COLUMN}=:untyped "
-                f"WHERE {where_clause.to_sql()};"
+                f"WHERE {self.PK_COLUMN}=:pk;"
             )
-            parameters = {"typed": dual_record.typed, "untyped": dual_record.untyped}
-            parameters.update(where_clause.values)
+            parameters = record.to_dict()
 
         elif event_name == "REMOVE":
-            where_clause = self.keys_to_where(event["dynamodb"]["Keys"])
-            sql = f"DELETE FROM {self.table_name} WHERE {where_clause.to_sql()};"
-            parameters = where_clause.values  # noqa: PD011
+            record = self.decode_event(event["dynamodb"])
+            sql = f"DELETE FROM {self.table_name} WHERE {self.PK_COLUMN}=:pk;"
+            parameters = record.to_dict()
 
         else:
             raise ValueError(f"Unknown CDC event name: {event_name}")
 
         return SQLOperation(sql, parameters)
 
-    def keys_to_where(self, keys: t.Dict[str, t.Dict[str, str]]) -> SQLParameterizedWhereClause:
-        """
-        Serialize CDC event's "Keys" representation to an SQL `WHERE` clause in CrateDB SQL syntax.
+    def decode_event(self, event: t.Dict[str, t.Any]) -> UniversalRecord:
+        # That's for INSERT+MODIFY.
+        if "NewImage" in event:
+            return self.decode_record(event["NewImage"], event["Keys"].keys())
 
-        IN (top-level stripped):
-        "Keys": {
-            "device": {"S": "foo"},
-            "timestamp": {"S": "2024-07-12T01:17:42"},
-        }
-
-        OUT:
-        WHERE data['device'] = 'foo' AND data['timestamp'] = '2024-07-12T01:17:42'
-        """
-        dual_record = self.decode_record(keys)
-        clause = SQLParameterizedWhereClause()
-        for key_name, key_value in dual_record.typed.items():
-            clause.add(lval=f"{self.TYPED_COLUMN}['{key_name}']", name=key_name, value=key_value)
-        return clause
+        # That's for REMOVE.
+        else:
+            return self.decode_record(event["Keys"], event["Keys"].keys())

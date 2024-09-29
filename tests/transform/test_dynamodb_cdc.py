@@ -3,8 +3,8 @@ from decimal import Decimal
 
 import pytest
 
-from commons_codec.model import DualRecord, SQLOperation
-from commons_codec.transform.dynamodb import CrateDBTypeDeserializer, DynamoDBCDCTranslator
+from commons_codec.model import SQLOperation, UniversalRecord
+from commons_codec.transform.dynamodb import CrateDBTypeDeserializer
 
 pytestmark = pytest.mark.dynamodb
 
@@ -27,8 +27,9 @@ MSG_INSERT_BASIC = {
     "tableName": "foo",
     "dynamodb": {
         "ApproximateCreationDateTime": 1720740233012995,
-        "Keys": {"device": {"S": "foo"}, "timestamp": {"S": "2024-07-12T01:17:42"}},
+        "Keys": {"id": {"S": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266"}},
         "NewImage": {
+            "id": {"S": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266"},
             "humidity": {"N": "84.84"},
             "temperature": {"N": "42.42"},
             "device": {"S": "foo"},
@@ -80,8 +81,9 @@ MSG_MODIFY_BASIC = {
     "tableName": "foo",
     "dynamodb": {
         "ApproximateCreationDateTime": 1720742302233719,
-        "Keys": {"device": {"S": "foo"}, "timestamp": {"S": "2024-07-12T01:17:42"}},
+        "Keys": {"id": {"S": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266"}},
         "NewImage": {
+            "id": {"S": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266"},
             "humidity": {"N": "84.84"},
             "temperature": {"N": "55.66"},
             "device": {"S": "bar"},
@@ -114,9 +116,10 @@ MSG_MODIFY_NESTED = {
     "tableName": "foo",
     "dynamodb": {
         "ApproximateCreationDateTime": 1720742302233719,
-        "Keys": {"device": {"S": "foo"}, "timestamp": {"S": "2024-07-12T01:17:42"}},
+        "Keys": {"id": {"S": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266"}},
         "NewImage": {
-            "device": {"M": {"id": {"S": "bar"}, "serial": {"N": 12345}}},
+            "id": {"S": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266"},
+            "device": {"S": "foo"},
             "tags": {"L": [{"S": "foo"}, {"S": "bar"}]},
             "empty_map": {"M": {}},
             "empty_list": {"L": []},
@@ -153,8 +156,9 @@ MSG_REMOVE = {
     "tableName": "foo",
     "dynamodb": {
         "ApproximateCreationDateTime": 1720742321848352,
-        "Keys": {"device": {"S": "bar"}, "timestamp": {"S": "2024-07-12T01:17:42"}},
+        "Keys": {"id": {"S": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266"}},
         "OldImage": {
+            "id": {"S": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266"},
             "humidity": {"N": "84.84"},
             "temperature": {"N": "55.66"},
             "device": {"S": "bar"},
@@ -176,35 +180,31 @@ MSG_REMOVE = {
 }
 
 
-def test_decode_ddb_deserialize_type():
-    assert DynamoDBCDCTranslator(table_name="foo").decode_record({"foo": {"N": "84.84"}}) == DualRecord(
-        typed={"foo": 84.84}, untyped={}
+def test_decode_ddb_deserialize_type(dynamodb_cdc_translator_foo):
+    assert dynamodb_cdc_translator_foo.decode_record({"foo": {"N": "84.84"}}) == UniversalRecord(
+        pk={}, typed={"foo": 84.84}, untyped={}
     )
 
 
-def test_decode_cdc_sql_ddl():
-    assert (
-        DynamoDBCDCTranslator(table_name="foo").sql_ddl
-        == "CREATE TABLE IF NOT EXISTS foo (data OBJECT(DYNAMIC), aux OBJECT(IGNORED));"
-    )
-
-
-def test_decode_cdc_unknown_source():
+def test_decode_cdc_unknown_source(dynamodb_cdc_translator_foo):
     with pytest.raises(ValueError) as ex:
-        DynamoDBCDCTranslator(table_name="foo").to_sql(MSG_UNKNOWN_SOURCE)
+        dynamodb_cdc_translator_foo.to_sql(MSG_UNKNOWN_SOURCE)
     assert ex.match("Unknown eventSource: foo:bar")
 
 
-def test_decode_cdc_unknown_event():
+def test_decode_cdc_unknown_event(dynamodb_cdc_translator_foo):
     with pytest.raises(ValueError) as ex:
-        DynamoDBCDCTranslator(table_name="foo").to_sql(MSG_UNKNOWN_EVENT)
+        dynamodb_cdc_translator_foo.to_sql(MSG_UNKNOWN_EVENT)
     assert ex.match("Unknown CDC event name: FOOBAR")
 
 
-def test_decode_cdc_insert_basic():
-    assert DynamoDBCDCTranslator(table_name="foo").to_sql(MSG_INSERT_BASIC) == SQLOperation(
-        statement="INSERT INTO foo (data, aux) VALUES (:typed, :untyped);",
+def test_decode_cdc_insert_basic(dynamodb_cdc_translator_foo):
+    assert dynamodb_cdc_translator_foo.to_sql(MSG_INSERT_BASIC) == SQLOperation(
+        statement="INSERT INTO foo (pk, data, aux) VALUES (:pk, :typed, :untyped);",
         parameters={
+            "pk": {
+                "id": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266",
+            },
             "typed": {
                 "humidity": 84.84,
                 "temperature": 42.42,
@@ -219,12 +219,14 @@ def test_decode_cdc_insert_basic():
     )
 
 
-def test_decode_cdc_insert_nested():
-    assert DynamoDBCDCTranslator(table_name="foo").to_sql(MSG_INSERT_NESTED) == SQLOperation(
-        statement="INSERT INTO foo (data, aux) VALUES (:typed, :untyped);",
+def test_decode_cdc_insert_nested(dynamodb_cdc_translator_foo):
+    assert dynamodb_cdc_translator_foo.to_sql(MSG_INSERT_NESTED) == SQLOperation(
+        statement="INSERT INTO foo (pk, data, aux) VALUES (:pk, :typed, :untyped);",
         parameters={
-            "typed": {
+            "pk": {
                 "id": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266",
+            },
+            "typed": {
                 "data": {"temperature": 42.42, "humidity": 84.84},
                 "meta": {"timestamp": "2024-07-12T01:17:42", "device": "foo"},
                 "string_set": ["location_1"],
@@ -237,14 +239,16 @@ def test_decode_cdc_insert_nested():
     )
 
 
-def test_decode_cdc_modify_basic():
-    assert DynamoDBCDCTranslator(table_name="foo").to_sql(MSG_MODIFY_BASIC) == SQLOperation(
-        statement="UPDATE foo SET data=:typed, aux=:untyped "
-        "WHERE data['device']=:device AND data['timestamp']=:timestamp;",
+def test_decode_cdc_modify_basic(dynamodb_cdc_translator_foo):
+    assert dynamodb_cdc_translator_foo.to_sql(MSG_MODIFY_BASIC) == SQLOperation(
+        statement="UPDATE foo SET data=:typed, aux=:untyped WHERE pk=:pk;",
         parameters={
-            "device": "foo",
-            "timestamp": "2024-07-12T01:17:42",
+            "pk": {
+                "id": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266",
+            },
             "typed": {
+                "device": "bar",
+                "timestamp": "2024-07-12T01:17:42",
                 "humidity": 84.84,
                 "temperature": 55.66,
                 "location": "Sydney",
@@ -259,14 +263,16 @@ def test_decode_cdc_modify_basic():
     )
 
 
-def test_decode_cdc_modify_nested():
-    assert DynamoDBCDCTranslator(table_name="foo").to_sql(MSG_MODIFY_NESTED) == SQLOperation(
-        statement="UPDATE foo SET data=:typed, aux=:untyped "
-        "WHERE data['device']=:device AND data['timestamp']=:timestamp;",
+def test_decode_cdc_modify_nested(dynamodb_cdc_translator_foo):
+    assert dynamodb_cdc_translator_foo.to_sql(MSG_MODIFY_NESTED) == SQLOperation(
+        statement="UPDATE foo SET data=:typed, aux=:untyped WHERE pk=:pk;",
         parameters={
-            "device": "foo",
-            "timestamp": "2024-07-12T01:17:42",
+            "pk": {
+                "id": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266",
+            },
             "typed": {
+                "device": "foo",
+                "timestamp": "2024-07-12T01:17:42",
                 "tags": ["foo", "bar"],
                 "empty_map": {},
                 "empty_list": [],
@@ -281,12 +287,15 @@ def test_decode_cdc_modify_nested():
     )
 
 
-def test_decode_cdc_remove():
-    assert DynamoDBCDCTranslator(table_name="foo").to_sql(MSG_REMOVE) == SQLOperation(
-        statement="DELETE FROM foo WHERE data['device']=:device AND data['timestamp']=:timestamp;",
+def test_decode_cdc_remove(dynamodb_cdc_translator_foo):
+    assert dynamodb_cdc_translator_foo.to_sql(MSG_REMOVE) == SQLOperation(
+        statement="DELETE FROM foo WHERE pk=:pk;",
         parameters={
-            "device": "bar",
-            "timestamp": "2024-07-12T01:17:42",
+            "pk": {
+                "id": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266",
+            },
+            "typed": {},
+            "untyped": {},
         },
     )
 
