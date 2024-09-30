@@ -4,6 +4,7 @@
 - DynamoDB: Change CrateDB data model to use (`pk`, `data`, `aux`) columns
   Attention: This is a breaking change.
 - MongoDB: Handle too large `$date.$numberLong` values gracefully
+- Zyp/Moksha: Improve error reporting when rule evaluation fails
 
 ## 2024/09/26 v0.0.19
 - DynamoDB CDC: Fix `MODIFY` operation by propagating `NewImage` fully

@@ -1,3 +1,4 @@
+import logging
 import re
 
 import pytest
@@ -50,22 +51,27 @@ def test_moksha_transformation_success_jq():
 
 
 def test_moksha_transformation_error_jq_scalar(caplog):
+    logging.getLogger("zyp.model.moksha").setLevel(logging.DEBUG)
     moksha = MokshaTransformation().jq(". /= 100")
     with pytest.raises(ValueError) as ex:
         moksha.apply("foo")
     assert ex.match(re.escape('string ("foo") and number (100) cannot be divided'))
 
-    assert "Error evaluating rule: MokshaRuntimeRule(type='jq'" in caplog.text
+    assert (
+        'Error evaluating rule: string ("foo") and number (100) cannot be divided. Expression: . /= 100'
+        in caplog.messages
+    )
     assert "Error payload:\nfoo" in caplog.messages
 
 
 def test_moksha_transformation_error_jq_map(caplog):
+    logging.getLogger("zyp.model.moksha").setLevel(logging.DEBUG)
     moksha = MokshaTransformation().jq(".foo")
     with pytest.raises(ValueError) as ex:
         moksha.apply(map(lambda x: x, ["foo"]))  # noqa: C417
     assert ex.match(re.escape('Cannot index array with string "foo"'))
 
-    assert "Error evaluating rule: MokshaRuntimeRule(type='jq'" in caplog.text
+    assert 'Error evaluating rule: Cannot index array with string "foo". Expression: .foo' in caplog.messages
     assert "Error payload:\n[]" in caplog.messages
 
 

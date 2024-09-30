@@ -22,11 +22,14 @@ class MokshaRule:
     disabled: t.Optional[bool] = False
 
     def compile(self):
-        return MokshaRuntimeRule(self.type, compile_expression(self.type, self.expression), disabled=self.disabled)
+        return MokshaRuntimeRule(
+            self, self.type, compile_expression(self.type, self.expression), disabled=self.disabled
+        )
 
 
 @define
 class MokshaRuntimeRule:
+    source: MokshaRule
     type: str
     transformer: MokshaTransformer
     disabled: t.Optional[bool] = False
@@ -76,10 +79,11 @@ class MokshaTransformation(ConverterBase):
         for rule in self._runtime_rules:
             try:
                 data = rule.evaluate(data)
-            except Exception:
-                logger.exception(f"Error evaluating rule: {rule}")
-                if isinstance(data, map):
-                    data = list(data)
-                logger.debug(f"Error payload:\n{data}")
+            except Exception as ex:
+                logger.error(f"Error evaluating rule: {ex}. Expression: {rule.source.expression}")
+                if logger.level is logging.DEBUG:
+                    if isinstance(data, map):
+                        data = list(data)
+                    logger.debug(f"Error payload:\n{data}")
                 raise
         return data
