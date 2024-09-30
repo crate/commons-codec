@@ -58,7 +58,10 @@ RECORD_IN_ALL_TYPES = {
         "code_bytes": {"$code": "ab\u0000ab\u0000"},
         "code_scope": {"$code": "abab", "$scope": {"x": {"$numberInt": "42"}}},
         "date_iso8601": {"$date": "2015-09-23T10:32:42.33Z"},
-        "date_numberlong": {"$date": {"$numberLong": "1356351330000"}},
+        "date_numberlong_valid": {"$date": {"$numberLong": "1356351330000"}},
+        "date_numberlong_invalid": {
+            "$date": {"$numberLong": "-9223372036854775808"}
+        },  # year -292275055 is out of range
         "dbref": {
             "$id": {"$oid": "56027fcae4b09385a85f9344"},
             "$ref": "foo",
@@ -169,7 +172,8 @@ RECORD_OUT_ALL_TYPES = {
             },
         },
         "date_iso8601": 1443004362000,
-        "date_numberlong": 1356351330000,
+        "date_numberlong_valid": 1356351330000,
+        "date_numberlong_invalid": 0,
         "dbref": {
             "$id": "56027fcae4b09385a85f9344",
             "$ref": "foo",

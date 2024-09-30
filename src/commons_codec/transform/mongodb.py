@@ -123,7 +123,11 @@ class MongoDBCrateDBConverter:
         type_ = next(iter(value))  # Get key of first item in dictionary.
         is_date_numberlong = type_ == "$date" and "$numberLong" in value["$date"]
         if is_date_numberlong:
-            out = dt.datetime.fromtimestamp(int(value["$date"]["$numberLong"]) / 1000, tz=dt.timezone.utc)
+            try:
+                out = dt.datetime.fromtimestamp(int(value["$date"]["$numberLong"]) / 1000, tz=dt.timezone.utc)
+            except ValueError as ex:
+                logger.error(f"Decoding legacy timestamp failed: {ex}. value={value}")
+                out = 0
         else:
             out = object_hook(value)
 
