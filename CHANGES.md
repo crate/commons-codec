@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## 2024/09/30 v0.0.20
 - DynamoDB: Change CrateDB data model to use (`pk`, `data`, `aux`) columns
   Attention: This is a breaking change.
 - MongoDB: Handle too large `$date.$numberLong` values gracefully
