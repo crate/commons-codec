@@ -111,7 +111,7 @@ dependencies = [
   "python-dateutil<3",
   "simplejson<4",
   "sqlalchemy-cratedb>=0.39.0",
-  "toolz<0.13",
+  "toolz<1.1",
 ]
 optional-dependencies.all = [
   "commons-codec[mongodb,zyp]",
