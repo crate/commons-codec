@@ -121,15 +121,17 @@ class MongoDBCrateDBConverter:
 
         # Special handling for datetime representation in NUMBERLONG format (emulated depth-first).
         type_ = next(iter(value))  # Get key of first item in dictionary.
-        is_date_numberlong = type_ == "$date" and "$numberLong" in value["$date"]
-        if is_date_numberlong:
-            try:
-                out = dt.datetime.fromtimestamp(int(value["$date"]["$numberLong"]) / 1000, tz=dt.timezone.utc)
-            except ValueError as ex:
-                logger.error(f"Decoding legacy timestamp failed: {ex}. value={value}")
-                out = 0
-        else:
+        if type_ == "$date" and isinstance(value["$date"], dict):
+            value = {"$date": int(value["$date"]["$numberLong"])}
+
+        # Invoke BSON decoder.
+        try:
             out = object_hook(value)
+        except bson.errors.InvalidBSON as ex:
+            logger.error(f"Decoding BSON value failed: {ex}. value={value}")
+            out = None
+            if "Python int too large to convert to C int" in str(ex):
+                out = 0
 
         is_bson = isinstance(out, all_bson_types())
 
