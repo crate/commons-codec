@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+- MongoDB: Fixed BSON decoding of `{"$date": 1180690093000}` timestamps
+- DynamoDB: Use CrateDB 5.8.3 for testing because 5.8.4 can no longer
+  store `ARRAY`s with varying inner types into `OBJECT(IGNORED)` columns.
 
 ## 2024/09/30 v0.0.20
 - DynamoDB: Change CrateDB data model to use (`pk`, `data`, `aux`) columns
