@@ -10,12 +10,25 @@ RESET_TABLES = [
 
 
 @pytest.fixture(scope="function")
-def cratedb(cratedb_service):
+def cratedb_custom_service():
+    """
+    Provide a CrateDB service instance to the test suite.
+    """
+    from cratedb_toolkit.testing.testcontainers.cratedb import CrateDBTestAdapter
+
+    db = CrateDBTestAdapter(crate_version="5.8.3")
+    db.start()
+    yield db
+    db.stop()
+
+
+@pytest.fixture(scope="function")
+def cratedb(cratedb_custom_service):
     """
     Provide a fresh canvas to each test case invocation, by resetting database content.
     """
-    cratedb_service.reset(tables=RESET_TABLES)
-    yield cratedb_service
+    cratedb_custom_service.reset(tables=RESET_TABLES)
+    yield cratedb_custom_service
 
 
 @pytest.fixture
