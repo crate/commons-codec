@@ -104,7 +104,7 @@ testdata = [
     DateConversionCase(
         converter=MongoDBCrateDBConverter(),
         data_in={"$date": {"$numberLong": "1655210544987"}},
-        data_out=dt.datetime(2022, 6, 14, 12, 42, 24, 987000, tzinfo=dt.timezone.utc),
+        data_out=dt.datetime(2022, 6, 14, 12, 42, 24, 987000),
     ),
     DateConversionCase(
         converter=MongoDBCrateDBConverter(timestamp_to_epoch=True, timestamp_use_milliseconds=True),
@@ -124,7 +124,12 @@ testdata = [
     DateConversionCase(
         converter=MongoDBCrateDBConverter(timestamp_to_iso8601=True),
         data_in={"$date": {"$numberLong": "1655210544987"}},
-        data_out="2022-06-14T12:42:24.987000+00:00",
+        data_out="2022-06-14T12:42:24.987000",
+    ),
+    DateConversionCase(
+        converter=MongoDBCrateDBConverter(timestamp_to_iso8601=True),
+        data_in={"$date": 1180690093000},
+        data_out="2007-06-01T09:28:13",
     ),
 ]
 
@@ -136,6 +141,7 @@ testdata_ids = [
     "epochms-$date-legacy",
     "iso8601-$date-canonical",
     "iso8601-$date-legacy",
+    "iso8601-$date-ultra-legacy",
 ]
 
 
