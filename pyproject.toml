@@ -121,7 +121,7 @@ optional-dependencies.develop = [
   "poethepoet<0.30",
   "pyproject-fmt<2.5",
   "ruff<0.8",
-  "validate-pyproject<0.21",
+  "validate-pyproject<0.22",
 ]
 optional-dependencies.doc = [
   "furo==2024.1.29",               # Check visited link style on newer versions!
