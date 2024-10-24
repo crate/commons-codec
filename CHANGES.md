@@ -2,6 +2,10 @@
 
 ## Unreleased
 - DynamoDB/Testing: Use CrateDB nightly again
+- DynamoDB: Use `ON CONFLICT DO NOTHING` clause on CDC operations
+  of type `INSERT`, to mitigate errors when events are relayed
+  redundantly from retries after partially failed batches on the
+  Lambda processor.
 
 ## 2024/10/09 v0.0.21
 - MongoDB: Fixed BSON decoding of `{"$date": 1180690093000}` timestamps

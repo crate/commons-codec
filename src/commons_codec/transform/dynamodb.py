@@ -201,7 +201,8 @@ class DynamoDBCDCTranslator(DynamoTranslatorBase):
                 f") VALUES ("
                 f":pk, "
                 f":typed, "
-                f":untyped);"
+                f":untyped) "
+                f"ON CONFLICT DO NOTHING;"
             )
             parameters = record.to_dict()
 
