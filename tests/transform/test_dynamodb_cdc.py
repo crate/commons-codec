@@ -200,7 +200,7 @@ def test_decode_cdc_unknown_event(dynamodb_cdc_translator_foo):
 
 def test_decode_cdc_insert_basic(dynamodb_cdc_translator_foo):
     assert dynamodb_cdc_translator_foo.to_sql(MSG_INSERT_BASIC) == SQLOperation(
-        statement="INSERT INTO foo (pk, data, aux) VALUES (:pk, :typed, :untyped);",
+        statement="INSERT INTO foo (pk, data, aux) VALUES (:pk, :typed, :untyped) ON CONFLICT DO NOTHING;",
         parameters={
             "pk": {
                 "id": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266",
@@ -221,7 +221,7 @@ def test_decode_cdc_insert_basic(dynamodb_cdc_translator_foo):
 
 def test_decode_cdc_insert_nested(dynamodb_cdc_translator_foo):
     assert dynamodb_cdc_translator_foo.to_sql(MSG_INSERT_NESTED) == SQLOperation(
-        statement="INSERT INTO foo (pk, data, aux) VALUES (:pk, :typed, :untyped);",
+        statement="INSERT INTO foo (pk, data, aux) VALUES (:pk, :typed, :untyped) ON CONFLICT DO NOTHING;",
         parameters={
             "pk": {
                 "id": "5F9E-Fsadd41C-4C92-A8C1-70BF3FFB9266",
@@ -349,7 +349,7 @@ def test_deserialize_list_objects():
 @pytest.mark.integration
 def test_to_sql_cratedb(caplog, cratedb, dynamodb_full_translator_foo):
     """
-    Verify converging NewImage CDC INSERT event to CrateDB.
+    Verify converging NewImage CDC INSERT events to CrateDB.
     """
 
     # Use the full-load translator only for running the SQL DDL.
@@ -362,7 +362,10 @@ def test_to_sql_cratedb(caplog, cratedb, dynamodb_full_translator_foo):
     translator = DynamoDBCDCTranslator(table_name="from.dynamodb")
     operation = translator.to_sql(MSG_INSERT_NESTED)
 
-    # Insert into CrateDB.
+    # Insert into CrateDB. Running the INSERT operation twice proves it
+    # does not raise any `DuplicateKeyException`, because CDC INSERT
+    # statements use `ON CONFLICT DO NOTHING`.
+    cratedb.database.run_sql(operation.statement, operation.parameters)
     cratedb.database.run_sql(operation.statement, operation.parameters)
 
     # Verify data in target database.
