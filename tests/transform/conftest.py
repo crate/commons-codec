@@ -16,7 +16,7 @@ def cratedb_custom_service():
     """
     from cratedb_toolkit.testing.testcontainers.cratedb import CrateDBTestAdapter
 
-    db = CrateDBTestAdapter(crate_version="5.8.3")
+    db = CrateDBTestAdapter(crate_version="nightly")
     db.start()
     yield db
     db.stop()
