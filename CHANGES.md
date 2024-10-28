@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## 2024/10/28 v0.0.22
 - DynamoDB/Testing: Use CrateDB nightly again
 - DynamoDB: Use `ON CONFLICT DO NOTHING` clause on CDC operations
   of type `INSERT`, to mitigate errors when events are relayed
