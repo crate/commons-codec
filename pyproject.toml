@@ -142,7 +142,7 @@ optional-dependencies.release = [
 optional-dependencies.test = [
   "cratedb-toolkit[testing]",
   "pytest<9",
-  "pytest-cov<6",
+  "pytest-cov<7",
   "pytest-mock<4",
 ]
 optional-dependencies.zyp = [
