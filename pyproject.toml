@@ -217,9 +217,6 @@ lint.per-file-ignores."examples/*" = [
   "T201",   # Allow `print`
 ]
 
-# ===================
-# Tasks configuration
-# ===================
 lint.per-file-ignores."tests/*" = [
   "S101", # Allow use of `assert`, and `print`.
 ]
@@ -297,6 +294,10 @@ non_interactive = true
 [tool.versioningit.vcs]
 method = "git"
 default-tag = "0.0.0"
+
+# ===================
+# Tasks configuration
+# ===================
 
 [tool.poe.tasks]
 
