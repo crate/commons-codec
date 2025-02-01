@@ -1,3 +1,4 @@
+# ruff: noqa: A005
 # Copyright (c) 2016-2024, The Kotori Developers and contributors.
 # Distributed under the terms of the LGPLv3 license, see LICENSE.
 import json

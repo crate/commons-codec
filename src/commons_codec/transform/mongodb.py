@@ -315,7 +315,7 @@ class MongoDBCDCTranslator(MongoDBTranslatorBase):
             oid: str = self.get_document_key(event)
             document = self.get_full_document(event)
             record = self.converter.decode_document(document)
-            sql = f"INSERT INTO {self.table_name} " f"({self.ID_COLUMN}, {self.DATA_COLUMN}) " "VALUES (:oid, :record);"
+            sql = f"INSERT INTO {self.table_name} ({self.ID_COLUMN}, {self.DATA_COLUMN}) VALUES (:oid, :record);"
             parameters = {"oid": oid, "record": record}
 
         # In order to use "full document" representations from "update" events,
@@ -325,7 +325,7 @@ class MongoDBCDCTranslator(MongoDBTranslatorBase):
             document = self.get_full_document(event)
             record = self.converter.decode_document(document)
             where_clause = self.where_clause(event)
-            sql = f"UPDATE {self.table_name} " f"SET {self.DATA_COLUMN} = :record " f"WHERE {where_clause};"
+            sql = f"UPDATE {self.table_name} SET {self.DATA_COLUMN} = :record WHERE {where_clause};"
             parameters = {"record": record}
 
         elif operation_type == "delete":

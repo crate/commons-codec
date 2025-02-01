@@ -58,6 +58,6 @@ def assert_type(value: t.Any, type_: t.Type):
     """
     Assertion helper with better error reporting.
     """
-    assert isinstance(
-        value, type_
-    ), f"Value is of type '{type(value).__name__}', but should be '{type_.__name__}' instead"
+    assert isinstance(value, type_), (
+        f"Value is of type '{type(value).__name__}', but should be '{type_.__name__}' instead"
+    )
