@@ -133,7 +133,7 @@ optional-dependencies.doc = [
   "sphinxext-opengraph<1",
 ]
 optional-dependencies.mongodb = [
-  "pymongo<4.12",
+  "pymongo<4.13",
 ]
 optional-dependencies.release = [
   "build<2",
