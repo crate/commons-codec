@@ -119,9 +119,9 @@ optional-dependencies.all = [
 optional-dependencies.develop = [
   "mypy<1.16",
   "poethepoet<1",
-  "pyproject-fmt<2.6",
+  "pyproject-fmt<3",
   "ruff<0.12",
-  "validate-pyproject<0.24",
+  "validate-pyproject<1",
 ]
 optional-dependencies.doc = [
   "furo==2024.1.29",               # Check visited link style on newer versions!
