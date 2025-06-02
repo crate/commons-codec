@@ -117,7 +117,7 @@ optional-dependencies.all = [
   "commons-codec[mongodb,zyp]",
 ]
 optional-dependencies.develop = [
-  "mypy<1.16",
+  "mypy<1.17",
   "poethepoet<1",
   "pyproject-fmt<3",
   "ruff<0.12",
