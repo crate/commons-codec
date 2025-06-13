@@ -133,20 +133,9 @@ class DynamoTranslatorBase:
         -- https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypeDescriptors
         """
         record = toolz.valmap(self.deserializer.deserialize, item)
-
-        pk = {}
-        untyped = {}
-        pk_names = key_names or []
-        if not pk_names and self.primary_key_schema is not None:
-            pk_names = self.primary_key_schema.keys()
-        for key, value in record.items():
-            if key in pk_names:
-                pk[key] = value
-            if isinstance(value, TaggableList) and value.get_tag("varied", False):
-                untyped[key] = value
-        record = toolz.dissoc(record, *pk.keys())
-        record = toolz.dissoc(record, *untyped.keys())
-        return UniversalRecord(pk=pk, typed=record, untyped=untyped)
+        return UniversalRecord.from_record(
+            record, key_names or (self.primary_key_schema and self.primary_key_schema.keys() or None)
+        )
 
 
 class DynamoDBFullLoadTranslator(DynamoTranslatorBase):

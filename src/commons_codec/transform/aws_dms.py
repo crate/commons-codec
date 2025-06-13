@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2024, Crate.io Inc.
+# Copyright (c) 2021-2025, Crate.io Inc.
 # Distributed under the terms of the LGPLv3 license, see LICENSE.
 
 import logging
@@ -15,6 +15,7 @@ from commons_codec.model import (
     SQLParameterizedSetClause,
     SQLParameterizedWhereClause,
     TableAddress,
+    UniversalRecord,
 )
 
 logger = logging.getLogger(__name__)
@@ -25,8 +26,18 @@ class DMSTranslatorCrateDBRecord:
     Translate DMS full-load and cdc events into CrateDB SQL statements.
     """
 
-    # Define name of the column where CDC's record data will get materialized into.
-    DATA_COLUMN = "data"
+    # Define the name of the column where primary key information will get materialized into.
+    # This column uses the `OBJECT(STRICT)` data type.
+    PK_COLUMN = "pk"
+
+    # Define the name of the column where CDC's record data will get materialized into.
+    # This column uses the `OBJECT(DYNAMIC)` data type.
+    TYPED_COLUMN = "data"
+
+    # Define the name of the column where untyped fields will get materialized into.
+    # This column uses the `OBJECT(IGNORED)` data type.
+    # TODO: Currently not used with DMS.
+    UNTYPED_COLUMN = "aux"
 
     def __init__(
         self,
@@ -72,18 +83,35 @@ class DMSTranslatorCrateDBRecord:
         self.primary_keys: t.List[str] = self.container.primary_keys[self.address]
         self.column_types: t.Dict[str, ColumnType] = self.container.column_types[self.address]
 
+        pks = self.control.get("table-def", {}).get("primary-key", [])
+        for pk in pks:
+            if pk not in self.primary_keys:
+                self.primary_keys.append(pk)
+
     def to_sql(self) -> SQLOperation:
         if self.operation == "create-table":
-            pks = self.control.get("table-def", {}).get("primary-key")
-            if pks:
-                self.primary_keys += pks
-            # TODO: What about dropping tables first?
-            return SQLOperation(f"CREATE TABLE IF NOT EXISTS {self.address.fqn} ({self.DATA_COLUMN} OBJECT(DYNAMIC));")
+            return SQLOperation(
+                f"CREATE TABLE IF NOT EXISTS {self.address.fqn} ("
+                f"{self.pk_clause()}"
+                f"{self.TYPED_COLUMN} OBJECT(DYNAMIC), "
+                f"{self.UNTYPED_COLUMN} OBJECT(IGNORED));"
+            )
 
         elif self.operation in ["load", "insert"]:
             self.decode_data()
-            sql = f"INSERT INTO {self.address.fqn} ({self.DATA_COLUMN}) VALUES (:record);"
-            parameters = {"record": self.data}
+            record = self.decode_record(self.data)
+            sql = (
+                f"INSERT INTO {self.address.fqn} ("
+                f"{self.PK_COLUMN}, "
+                f"{self.TYPED_COLUMN}, "
+                f"{self.UNTYPED_COLUMN}"
+                f") VALUES ("
+                f":pk, "
+                f":typed, "
+                f":untyped) "
+                f"ON CONFLICT DO NOTHING;"
+            )
+            parameters = record.to_dict()
 
         elif self.operation == "update":
             self.decode_data()
@@ -105,6 +133,43 @@ class DMSTranslatorCrateDBRecord:
 
         return SQLOperation(sql, parameters)
 
+    def pk_clause(self) -> str:
+        """
+        Return primary key clause in string format.
+        """
+        if self.primary_keys:
+            columns = self.control.get("table-def", {}).get("columns", {})
+            pk_clauses = []
+            for pk_name in self.primary_keys:
+                col_meta = columns.get(pk_name) or {}
+                ltype = col_meta.get("type", "TEXT")
+                pk_clauses.append(f'"{pk_name}" {self.resolve_type(ltype)} PRIMARY KEY')
+            if pk_clauses:
+                return f"{self.PK_COLUMN} OBJECT(STRICT) AS ({', '.join(pk_clauses)}), "
+        return ""
+
+    @staticmethod
+    def resolve_type(ltype: str) -> str:
+        """
+        Map DMS/Kinesis data type to CrateDB data type.
+
+        TODO: Right now only the INT* family is mapped. Unrecognised value types are mapped
+              to `TEXT`, acting as a sane default. Consider adding an enriched set of type
+              mappings when applicable.
+
+        - https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Target.S3.html#CHAP_Target.S3.DataTypes
+        - https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Source.PostgreSQL.html#CHAP_Source-PostgreSQL-DataTypes
+        - https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Target.Kinesis.html
+        - https://repost.aws/questions/QUkEPhdTIpRoCC7jcQ21xGyQ/amazon-dms-table-mapping-tranformation
+        """
+        type_map = {
+            "INT8": "INT1",
+            "INT16": "INT2",
+            "INT32": "INT4",
+            "INT64": "INT8",
+        }
+        return type_map.get(ltype, "TEXT")
+
     def update_clause(self) -> SQLParameterizedSetClause:
         """
         Serializes an image to a comma-separated list of column/values pairs
@@ -122,7 +187,7 @@ class DMSTranslatorCrateDBRecord:
             # Skip primary key columns, they cannot be updated.
             if column in self.primary_keys:
                 continue
-            clause.add(lval=f"{self.DATA_COLUMN}['{column}']", value=value, name=column)
+            clause.add(lval=f"{self.TYPED_COLUMN}['{column}']", value=value, name=column)
         return clause
 
     def decode_data(self):
@@ -143,6 +208,12 @@ class DMSTranslatorCrateDBRecord:
                     value = json.loads(value)
                 self.data[column_name] = value
 
+    def decode_record(self, item: t.Dict[str, t.Any], key_names: t.Union[t.List[str], None] = None) -> UniversalRecord:
+        """
+        Deserialize DMS event record into vanilla Python.
+        """
+        return UniversalRecord.from_record(item, key_names or self.primary_keys)
+
     def keys_to_where(self) -> SQLParameterizedWhereClause:
         """
         Produce an SQL WHERE clause based on primary key definition and current record's data.
@@ -152,7 +223,7 @@ class DMSTranslatorCrateDBRecord:
         clause = SQLParameterizedWhereClause()
         for key_name in self.primary_keys:
             key_value = self.data.get(key_name)
-            clause.add(lval=f"{self.DATA_COLUMN}['{key_name}']", value=key_value, name=key_name)
+            clause.add(lval=f"{self.TYPED_COLUMN}['{key_name}']", value=key_value, name=key_name)
         return clause
 
 
