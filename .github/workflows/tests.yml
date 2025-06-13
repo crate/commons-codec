@@ -3,7 +3,7 @@ name: "Tests"
 on:
   push:
     branches: [ main ]
-  pull_request: ~
+  pull_request:
   workflow_dispatch:
 
 concurrency:
@@ -21,7 +21,14 @@ jobs:
       fail-fast: false
       matrix:
         os: ['ubuntu-latest']
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: [
+          '3.8',
+          '3.9',
+          '3.10',
+          '3.11',
+          '3.12',
+          '3.13',
+        ]
 
     env:
       OS: ${{ matrix.os }}
@@ -85,7 +92,14 @@ jobs:
       fail-fast: false
       matrix:
         os: ['ubuntu-latest']
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: [
+          '3.8',
+          '3.9',
+          '3.10',
+          '3.11',
+          '3.12',
+          '3.13',
+        ]
 
     env:
       OS: ${{ matrix.os }}
@@ -140,7 +154,13 @@ jobs:
       fail-fast: false
       matrix:
         os: ['ubuntu-latest']
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: [
+          '3.9',
+          '3.10',
+          '3.11',
+          '3.12',
+          '3.13',
+        ]
 
     env:
       OS: ${{ matrix.os }}
