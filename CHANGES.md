@@ -5,6 +5,7 @@
   same, but provided using a dedicated package now
 - CI: Added support for Python 3.13
 - DMS: Fixed handling of primary keys
+- DMS: Added support for the previously missing `drop-table` operation
 
 ## 2024/10/28 v0.0.22
 - DynamoDB/Testing: Use CrateDB nightly again
