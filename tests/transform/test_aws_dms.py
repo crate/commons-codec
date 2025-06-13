@@ -1,6 +1,7 @@
 # ruff: noqa: S608 FIXME: Possible SQL injection vector through string-based query construction
 import base64
 import json
+from copy import deepcopy
 
 import pytest
 
@@ -213,19 +214,42 @@ def test_decode_cdc_unknown_event(cdc):
 
 def test_decode_cdc_sql_ddl_regular(cdc):
     assert cdc.to_sql(MSG_CONTROL_CREATE_TABLE) == SQLOperation(
-        statement="CREATE TABLE IF NOT EXISTS public.foo (data OBJECT(DYNAMIC));", parameters=None
+        statement="CREATE TABLE IF NOT EXISTS public.foo "
+        '(pk OBJECT(STRICT) AS ("id" INT4 PRIMARY KEY), data OBJECT(DYNAMIC), aux OBJECT(IGNORED));',
+        parameters=None,
     )
 
 
 def test_decode_cdc_sql_ddl_awsdms(cdc):
     assert cdc.to_sql(MSG_CONTROL_AWSDMS) == SQLOperation(
-        statement="CREATE TABLE IF NOT EXISTS dms.awsdms_apply_exceptions (data OBJECT(DYNAMIC));", parameters=None
+        statement="CREATE TABLE IF NOT EXISTS dms.awsdms_apply_exceptions (data OBJECT(DYNAMIC), aux OBJECT(IGNORED));",
+        parameters=None,
     )
 
 
-def test_decode_cdc_insert(cdc):
+def test_decode_cdc_insert_without_pk(cdc):
+    """
+    Emulate INSERT operation without primary keys.
+    """
     assert cdc.to_sql(MSG_DATA_INSERT) == SQLOperation(
-        statement="INSERT INTO public.foo (data) VALUES (:record);", parameters={"record": RECORD_INSERT}
+        statement="INSERT INTO public.foo (pk, data, aux) VALUES (:pk, :typed, :untyped) ON CONFLICT DO NOTHING;",
+        parameters={"pk": {}, "typed": RECORD_INSERT, "untyped": {}},
+    )
+
+
+def test_decode_cdc_insert_with_pk(cdc):
+    """
+    Emulate INSERT operation with primary keys.
+    """
+    # Seed translator with a control message, describing the table schema.
+    cdc.to_sql(MSG_CONTROL_CREATE_TABLE)
+
+    # Emulate an INSERT operation.
+    record = deepcopy(RECORD_INSERT)
+    record.pop("id")
+    assert cdc.to_sql(MSG_DATA_INSERT) == SQLOperation(
+        statement="INSERT INTO public.foo (pk, data, aux) VALUES (:pk, :typed, :untyped) ON CONFLICT DO NOTHING;",
+        parameters={"pk": {"id": 46}, "typed": record, "untyped": {}},
     )
 
 
@@ -233,7 +257,7 @@ def test_decode_cdc_update_success(cdc):
     """
     Update statements need schema knowledge about primary keys.
     """
-    # Seed translator with control message, describing the table schema.
+    # Seed translator with a control message, describing the table schema.
     cdc.to_sql(MSG_CONTROL_CREATE_TABLE)
 
     # Emulate an UPDATE operation.

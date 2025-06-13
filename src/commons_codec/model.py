@@ -4,9 +4,12 @@ import typing as t
 from enum import auto
 from functools import cached_property
 
+import toolz
 from attr import Factory
 from attrs import define
 from sqlalchemy_cratedb.support import quote_relation_name
+
+from commons_codec.util.data import TaggableList
 
 if sys.version_info >= (3, 11):
     from enum import StrEnum
@@ -143,3 +146,19 @@ class UniversalRecord:
 
     def to_dict(self):
         return {"pk": self.pk, "typed": self.typed, "untyped": self.untyped}
+
+    @classmethod
+    def from_record(
+        cls, record: t.Dict[str, t.Any], primary_keys: t.Union[t.List[str], None] = None
+    ) -> "UniversalRecord":
+        pk = {}
+        untyped = {}
+        primary_keys_effective = set(primary_keys or [])
+        for key, value in record.items():
+            if key in primary_keys_effective:
+                pk[key] = value
+            if isinstance(value, TaggableList) and value.get_tag("varied", False):
+                untyped[key] = value
+        record = toolz.dissoc(record, *pk.keys())
+        record = toolz.dissoc(record, *untyped.keys())
+        return cls(pk=pk, typed=record, untyped=untyped)
