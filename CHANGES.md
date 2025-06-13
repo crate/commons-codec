@@ -4,6 +4,7 @@
 - Dependencies: Migrated from `zyp` to `tikray`. It's effectively the
   same, but provided using a dedicated package now
 - CI: Added support for Python 3.13
+- DMS: Fixed handling of primary keys
 
 ## 2024/10/28 v0.0.22
 - DynamoDB/Testing: Use CrateDB nightly again
