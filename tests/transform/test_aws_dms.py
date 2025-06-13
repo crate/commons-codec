@@ -212,10 +212,29 @@ def test_decode_cdc_unknown_event(cdc):
     }
 
 
-def test_decode_cdc_sql_ddl_regular(cdc):
+def test_decode_cdc_drop_resets_schema_cache(cdc):
+    # Create with single-PK.
+    cdc.to_sql(MSG_CONTROL_CREATE_TABLE)
+    # Drop table – cache must be cleared.
+    cdc.to_sql(MSG_CONTROL_DROP_TABLE)
+    # Recreate with a different PK set.
+    msg_recreate = json.loads(json.dumps(MSG_CONTROL_CREATE_TABLE))
+    msg_recreate["control"]["table-def"]["primary-key"] = ["name"]
+    op = cdc.to_sql(msg_recreate)
+    assert '("name" TEXT PRIMARY KEY)' in op.statement
+
+
+def test_decode_cdc_sql_ddl_regular_create(cdc):
     assert cdc.to_sql(MSG_CONTROL_CREATE_TABLE) == SQLOperation(
         statement="CREATE TABLE IF NOT EXISTS public.foo "
         '(pk OBJECT(STRICT) AS ("id" INT4 PRIMARY KEY), data OBJECT(DYNAMIC), aux OBJECT(IGNORED));',
+        parameters=None,
+    )
+
+
+def test_decode_cdc_sql_ddl_regular_drop(cdc):
+    assert cdc.to_sql(MSG_CONTROL_DROP_TABLE) == SQLOperation(
+        statement="DROP TABLE IF EXISTS public.foo;",
         parameters=None,
     )
 
