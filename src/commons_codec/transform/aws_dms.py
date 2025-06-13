@@ -1,6 +1,6 @@
 # Copyright (c) 2021-2024, Crate.io Inc.
 # Distributed under the terms of the LGPLv3 license, see LICENSE.
-
+import copy
 import logging
 import typing as t
 
@@ -85,6 +85,12 @@ class DMSTranslatorCrateDBRecord:
             return SQLOperation(
                 f"CREATE TABLE IF NOT EXISTS {self.address.fqn} ({self.pk_clause()}{self.DATA_COLUMN} OBJECT(DYNAMIC));"
             )
+
+        elif self.operation == "drop-table":
+            # Remove cached schema information so a future CREATE starts clean.
+            self.container.primary_keys = self.container.primary_keys_caller
+            self.container.column_types = self.container.column_types_caller
+            return SQLOperation(f"DROP TABLE IF EXISTS {self.address.fqn};")
 
         elif self.operation in ["load", "insert"]:
             self.decode_data()
@@ -216,6 +222,10 @@ class DMSTranslatorCrateDB:
     ):
         self.primary_keys = primary_keys or PrimaryKeyStore()
         self.column_types = column_types or ColumnTypeMapStore()
+
+        # Store caller-provided schema information to restore this state on `DROP TABLE` operations.
+        self.primary_keys_caller = copy.deepcopy(self.primary_keys)
+        self.column_types_caller = copy.deepcopy(self.column_types)
 
     def to_sql(self, record: t.Dict[str, t.Any]) -> SQLOperation:
         """
