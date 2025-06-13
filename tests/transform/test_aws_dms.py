@@ -213,7 +213,9 @@ def test_decode_cdc_unknown_event(cdc):
 
 def test_decode_cdc_sql_ddl_regular(cdc):
     assert cdc.to_sql(MSG_CONTROL_CREATE_TABLE) == SQLOperation(
-        statement="CREATE TABLE IF NOT EXISTS public.foo (data OBJECT(DYNAMIC));", parameters=None
+        statement="CREATE TABLE IF NOT EXISTS public.foo "
+        '(pk OBJECT(STRICT) AS ("id" INT4 PRIMARY KEY), data OBJECT(DYNAMIC));',
+        parameters=None,
     )
 
 

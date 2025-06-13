@@ -25,7 +25,11 @@ class DMSTranslatorCrateDBRecord:
     Translate DMS full-load and cdc events into CrateDB SQL statements.
     """
 
-    # Define name of the column where CDC's record data will get materialized into.
+    # Define the name of the column where primary key information will get materialized into.
+    # This column uses the `OBJECT(STRICT)` data type.
+    PK_COLUMN = "pk"
+
+    # Define the name of the column where CDC's record data will get materialized into.
     DATA_COLUMN = "data"
 
     def __init__(
@@ -72,13 +76,15 @@ class DMSTranslatorCrateDBRecord:
         self.primary_keys: t.List[str] = self.container.primary_keys[self.address]
         self.column_types: t.Dict[str, ColumnType] = self.container.column_types[self.address]
 
+        pks = self.control.get("table-def", {}).get("primary-key", [])
+        if not self.primary_keys and pks:
+            self.primary_keys.extend(pks)
+
     def to_sql(self) -> SQLOperation:
         if self.operation == "create-table":
-            pks = self.control.get("table-def", {}).get("primary-key")
-            if pks:
-                self.primary_keys += pks
-            # TODO: What about dropping tables first?
-            return SQLOperation(f"CREATE TABLE IF NOT EXISTS {self.address.fqn} ({self.DATA_COLUMN} OBJECT(DYNAMIC));")
+            return SQLOperation(
+                f"CREATE TABLE IF NOT EXISTS {self.address.fqn} ({self.pk_clause()}{self.DATA_COLUMN} OBJECT(DYNAMIC));"
+            )
 
         elif self.operation in ["load", "insert"]:
             self.decode_data()
@@ -104,6 +110,42 @@ class DMSTranslatorCrateDBRecord:
             raise UnknownOperationError(message, operation=self.operation, record=self.event)
 
         return SQLOperation(sql, parameters)
+
+    def pk_clause(self) -> str:
+        """
+        Return primary key clause in string format.
+        """
+        if self.primary_keys:
+            columns = self.control.get("table-def", {}).get("columns", {})
+            pk_clauses = [
+                f'"{pk_name}" {self.resolve_type(columns.get(pk_name)["type"])} PRIMARY KEY'
+                for pk_name in self.primary_keys
+            ]
+            if pk_clauses:
+                return f"{self.PK_COLUMN} OBJECT(STRICT) AS ({', '.join(pk_clauses)}), "
+        return ""
+
+    @staticmethod
+    def resolve_type(ltype: str) -> str:
+        """
+        Map DMS/Kinesis data type to CrateDB data type.
+
+        TODO: Right now only the INT* family is mapped. Unrecognised values are forwarded
+              verbatim, yielding unknown types such as STRING, TIMESTAMP, etc. in CrateDB,
+              which will error out at execution time.
+
+        - https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Target.S3.html#CHAP_Target.S3.DataTypes
+        - https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Source.PostgreSQL.html#CHAP_Source-PostgreSQL-DataTypes
+        - https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Target.Kinesis.html
+        - https://repost.aws/questions/QUkEPhdTIpRoCC7jcQ21xGyQ/amazon-dms-table-mapping-tranformation
+        """
+        type_map = {
+            "INT8": "INT1",
+            "INT16": "INT2",
+            "INT32": "INT4",
+            "INT64": "INT8",
+        }
+        return type_map.get(ltype, "TEXT")
 
     def update_clause(self) -> SQLParameterizedSetClause:
         """
