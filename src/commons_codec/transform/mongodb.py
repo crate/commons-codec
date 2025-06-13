@@ -53,7 +53,7 @@ class MongoDBCrateDBConverter:
         """
         data = map(self.decode_bson, data)
         data = map(self.decode_value, data)
-        # TODO: This is currently untyped. Types are defined in Zyp, see `zyp.model.base`.
+        # TODO: This is currently untyped. Types are defined in Tikray, see `tikray.model.base`.
         if self.transformation is not None:
             data = self.transformation.apply(data)
         return data
