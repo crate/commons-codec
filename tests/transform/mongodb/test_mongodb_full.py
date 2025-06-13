@@ -3,8 +3,10 @@ from copy import deepcopy
 
 import pytest
 
-from zyp.model.collection import CollectionTransformation
-from zyp.model.moksha import MokshaTransformation
+pytest.importorskip("tikray")
+
+from tikray.model.collection import CollectionTransformation
+from tikray.model.moksha import MokshaTransformation
 
 pytestmark = pytest.mark.mongodb
 

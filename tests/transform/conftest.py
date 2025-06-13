@@ -5,6 +5,7 @@ from commons_codec.transform.dynamodb_model import PrimaryKeySchema
 
 RESET_TABLES = [
     "from.dynamodb",
+    "from.generic",
     "from.mongodb",
 ]
 

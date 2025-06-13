@@ -28,15 +28,15 @@
   [Kotori](https://kotori.readthedocs.io/) and [LorryStream](https://lorrystream.readthedocs.io/),
   in order to provide them per standalone package for broader use cases.
 
-- [Zyp], a generic and compact **transformation engine** written in Python, for data
+- [Tikray], a generic and compact **transformation engine** written in Python, for data
   decoding, encoding, conversion, translation, transformation, and cleansing purposes,
   to be used as a pipeline element for data pre- and/or post-processing.
 
 ## Installation
 The package is available from [PyPI] at [commons-codec].
-To install the most recent version, including support for MongoDB, and Zyp, run:
+To install the most recent version, including support for MongoDB, and Tikray, run:
 ```shell
-pip install --upgrade 'commons-codec[mongodb,zyp]'
+pip install --upgrade 'commons-codec[mongodb,tikray]'
 ```
 
 ## Usage
@@ -51,7 +51,7 @@ Kudos to the authors of all the many software components this library is
 vendoring and building upon.
 
 ### Similar Projects
-See [prior art] and [Zyp research].
+See [prior art] and [Tikray research].
 
 ### Contributing
 The `commons-codec` package is an open source project, and is
@@ -73,10 +73,10 @@ within the header sections of relevant files.
 [Apache Commons Codec]: https://commons.apache.org/proper/commons-codec/
 [Change Data Capture (CDC)]: https://en.wikipedia.org/wiki/Change_data_capture
 [commons-codec]: https://pypi.org/project/commons-codec/
-[Zyp research]: https://commons-codec.readthedocs.io/zyp/research.html
 [documentation]: https://commons-codec.readthedocs.io/
 [examples]: https://github.com/crate/commons-codec/tree/main/examples
 [managed on GitHub]: https://github.com/crate/commons-codec
 [prior art]: https://commons-codec.readthedocs.io/prior-art.html
 [PyPI]: https://pypi.org/
-[Zyp]: https://commons-codec.readthedocs.io/zyp/
+[Tikray]: https://tikray.readthedocs.io/
+[Tikray research]: https://tikray.readthedocs.io/research.html

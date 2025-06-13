@@ -1,7 +1,12 @@
 import pytest
 
+pytest.importorskip("tikray")
+
+from tikray.model.treatment import Treatment
+
 from commons_codec.model import SQLOperation
-from zyp.model.treatment import Treatment
+
+pytestmark = pytest.mark.cratedb
 
 
 @pytest.mark.integration

@@ -3,14 +3,18 @@ import datetime as dt
 import typing as t
 
 import pytest
+
+pytest.importorskip("tikray")
+
 from attrs import define
 
 pytestmark = pytest.mark.mongodb
 
+from tikray.model.bucket import BucketTransformation, ValueConverter
+from tikray.model.collection import CollectionTransformation
+from tikray.model.treatment import Treatment
+
 from commons_codec.transform.mongodb import MongoDBCrateDBConverter
-from zyp.model.bucket import BucketTransformation, ValueConverter
-from zyp.model.collection import CollectionTransformation
-from zyp.model.treatment import Treatment
 
 convert_epoch = MongoDBCrateDBConverter.convert_epoch
 convert_iso8601 = MongoDBCrateDBConverter.convert_iso8601
@@ -280,7 +284,7 @@ def test_convert_with_treatment_all_options():
 
 def test_convert_transform_timestamp():
     """
-    Validate a Zyp transformation that converts datetime values in text format.
+    Validate a Tikray transformation that converts datetime values in text format.
     """
     data_in = [{"device": "Hotzenplotz", "temperature": 42.42, "timestamp": "06/14/2022 12:42:24.4242 UTC"}]
     data_out = [{"device": "Hotzenplotz", "temperature": 42.42, "timestamp": 1655210544.4242}]

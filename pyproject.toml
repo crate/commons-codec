@@ -33,6 +33,7 @@ keywords = [
   "serialize",
   "sql",
   "tasmota",
+  "tikray",
   "tool",
   "transcode",
   "transform",
@@ -43,7 +44,6 @@ keywords = [
   "unmarshal",
   "unserialize",
   "utility",
-  "zyp",
 ]
 license = { text = "LGPL 3, EUPL 1.2" }
 authors = [
@@ -114,7 +114,7 @@ dependencies = [
   "toolz<1.1",
 ]
 optional-dependencies.all = [
-  "commons-codec[mongodb,zyp]",
+  "commons-codec[mongodb,tikray]",
 ]
 optional-dependencies.develop = [
   "mypy<1.17",
@@ -145,13 +145,8 @@ optional-dependencies.test = [
   "pytest-cov<7",
   "pytest-mock<4",
 ]
-optional-dependencies.zyp = [
-  "jmespath<1.1",
-  "jq<1.9",
-  "jsonpointer<4",
-  "python-dateutil<2.10",
-  "pyyaml<7",
-  "transon==0.0.7",
+optional-dependencies.tikray = [
+  "tikray>=0.2.2,<0.3",
 ]
 
 urls.Changelog = "https://commons-codec.readthedocs.io/changes.html"
@@ -237,7 +232,6 @@ testpaths = [
   "commons_codec",
   "examples",
   "tests",
-  "zyp",
 ]
 python_files = [
   "test_*.py",
@@ -245,6 +239,7 @@ python_files = [
 ]
 xfail_strict = true
 markers = [
+  "cratedb",
   "dynamodb",
   "integration",
   "mongodb",
@@ -261,7 +256,6 @@ source = [
 branch = false
 omit = [
   "tests/*",
-  "src/zyp/util/dictx.py",
 ]
 
 [tool.coverage.report]
@@ -276,7 +270,6 @@ exclude_lines = [
 mypy_path = "src"
 packages = [
   "commons_codec",
-  "zyp",
 ]
 exclude = [
 ]
