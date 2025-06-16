@@ -50,9 +50,6 @@ and explore the source code or its [examples].
 Kudos to the authors of all the many software components this library is
 vendoring and building upon.
 
-### Similar Projects
-See [prior art] and [Tikray research].
-
 ### Contributing
 The `commons-codec` package is an open source project, and is
 [managed on GitHub]. The project is still in its infancy, and
@@ -76,7 +73,5 @@ within the header sections of relevant files.
 [documentation]: https://commons-codec.readthedocs.io/
 [examples]: https://github.com/crate/commons-codec/tree/main/examples
 [managed on GitHub]: https://github.com/crate/commons-codec
-[prior art]: https://commons-codec.readthedocs.io/prior-art.html
 [PyPI]: https://pypi.org/
 [Tikray]: https://tikray.readthedocs.io/
-[Tikray research]: https://tikray.readthedocs.io/research.html
