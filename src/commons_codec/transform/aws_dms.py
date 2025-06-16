@@ -189,7 +189,7 @@ class DMSTranslatorCrateDBRecord:
         data['age'] = '33', data['attributes'] = '{"foo": "bar"}', data['name'] = 'John'
         """
         clause = SQLParameterizedSetClause()
-        for column, value in self.event["data"].items():
+        for column, value in self.data.items():
             # Skip primary key columns, they cannot be updated.
             if column in self.primary_keys:
                 continue
