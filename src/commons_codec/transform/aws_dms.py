@@ -98,9 +98,9 @@ class DMSTranslatorCrateDBRecord:
             )
 
         elif self.operation == "drop-table":
-            # Remove cached schema information so a future CREATE starts clean.
-            self.container.primary_keys = self.container.primary_keys_caller
-            self.container.column_types = self.container.column_types_caller
+            # Remove cached schema information by restoring original so a future CREATE starts clean.
+            self.container.primary_keys[self.address] = self.container.primary_keys_caller.get(self.address, [])
+            self.container.column_types[self.address] = self.container.column_types_caller.get(self.address, [])
             return SQLOperation(f"DROP TABLE IF EXISTS {self.address.fqn};")
 
         elif self.operation in ["load", "insert"]:
