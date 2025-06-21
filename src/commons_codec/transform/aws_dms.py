@@ -92,7 +92,7 @@ class DMSTranslatorCrateDBRecord:
         if self.operation == "create-table":
             return SQLOperation(
                 f"CREATE TABLE IF NOT EXISTS {self.address.fqn} ("
-                f"{self.pk_clause()}"
+                f"{self.PK_COLUMN} OBJECT(STRICT){self.pk_clause()}, "
                 f"{self.TYPED_COLUMN} OBJECT(DYNAMIC), "
                 f"{self.UNTYPED_COLUMN} OBJECT(IGNORED));"
             )
@@ -151,7 +151,7 @@ class DMSTranslatorCrateDBRecord:
                 ltype = col_meta.get("type", "TEXT")
                 pk_clauses.append(f'"{pk_name}" {self.resolve_type(ltype)} PRIMARY KEY')
             if pk_clauses:
-                return f"{self.PK_COLUMN} OBJECT(STRICT) AS ({', '.join(pk_clauses)}), "
+                return f" AS ({', '.join(pk_clauses)})"
         return ""
 
     @staticmethod
@@ -229,7 +229,8 @@ class DMSTranslatorCrateDBRecord:
         clause = SQLParameterizedWhereClause()
         for key_name in self.primary_keys:
             key_value = self.data.get(key_name)
-            clause.add(lval=f"{self.TYPED_COLUMN}['{key_name}']", value=key_value, name=key_name)
+            if key_value is not None:
+                clause.add(lval=f"{self.PK_COLUMN}['{key_name}']", value=key_value, name=key_name)
         return clause
 
 

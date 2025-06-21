@@ -241,7 +241,8 @@ def test_decode_cdc_sql_ddl_regular_drop(cdc):
 
 def test_decode_cdc_sql_ddl_awsdms(cdc):
     assert cdc.to_sql(MSG_CONTROL_AWSDMS) == SQLOperation(
-        statement="CREATE TABLE IF NOT EXISTS dms.awsdms_apply_exceptions (data OBJECT(DYNAMIC), aux OBJECT(IGNORED));",
+        statement="CREATE TABLE IF NOT EXISTS dms.awsdms_apply_exceptions "
+        "(pk OBJECT(STRICT), data OBJECT(DYNAMIC), aux OBJECT(IGNORED));",
         parameters=None,
     )
 
@@ -283,7 +284,7 @@ def test_decode_cdc_update_success(cdc):
     assert cdc.to_sql(MSG_DATA_UPDATE_VALUE) == SQLOperation(
         statement="UPDATE public.foo SET "
         "data['age']=:age, data['attributes']=:attributes, data['name']=:name "
-        "WHERE data['id']=:id;",
+        "WHERE pk['id']=:id;",
         parameters=RECORD_UPDATE,
     )
 
@@ -310,7 +311,7 @@ def test_decode_cdc_delete_success(cdc):
 
     # Emulate a DELETE operation.
     assert cdc.to_sql(MSG_DATA_DELETE) == SQLOperation(
-        statement="DELETE FROM public.foo WHERE data['id']=:id;", parameters={"id": 45}
+        statement="DELETE FROM public.foo WHERE pk['id']=:id;", parameters={"id": 45}
     )
 
 
