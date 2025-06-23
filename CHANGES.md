@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## 2025/06/23 v0.0.23
 - Dependencies: Migrated from `zyp` to `tikray`. It's effectively the
   same, but provided using a dedicated package now
 - CI: Added support for Python 3.13
