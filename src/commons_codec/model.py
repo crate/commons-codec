@@ -90,6 +90,10 @@ class SQLOperation:
     parameters: t.Optional[t.Union[t.Mapping[str, t.Any], t.List[t.Mapping[str, t.Any]]]] = None
 
 
+class SkipOperation(Exception):
+    pass
+
+
 @define
 class SQLParameterizedClause:
     """
