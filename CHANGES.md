@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- DMS: Added option `ignore_ddl` to ignore DDL events
 
 ## 2025/06/23 v0.0.23
 - Dependencies: Migrated from `zyp` to `tikray`. It's effectively the

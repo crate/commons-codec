@@ -6,7 +6,14 @@ from copy import deepcopy
 import pytest
 
 from commons_codec.exception import MessageFormatError, UnknownOperationError
-from commons_codec.model import ColumnType, ColumnTypeMapStore, SQLOperation, TableAddress
+from commons_codec.model import (
+    ColumnType,
+    ColumnTypeMapStore,
+    PrimaryKeyStore,
+    SkipOperation,
+    SQLOperation,
+    TableAddress,
+)
 from commons_codec.transform.aws_dms import DMSTranslatorCrateDB
 
 RECORD_INSERT = {"age": 31, "attributes": {"baz": "qux"}, "id": 46, "name": "Jane"}
@@ -179,7 +186,7 @@ MSG_CONTROL_AWSDMS = {
 @pytest.fixture
 def cdc():
     """
-    Provide fresh translator instance.
+    Provide a regular translator instance.
     """
     column_types = ColumnTypeMapStore().add(
         table=TableAddress(schema="public", table="foo"),
@@ -187,6 +194,22 @@ def cdc():
         type_=ColumnType.MAP,
     )
     return DMSTranslatorCrateDB(column_types=column_types)
+
+
+@pytest.fixture
+def cdc_without_ddl():
+    """
+    Provide a translator instance that ignores DDL events.
+    """
+    ta = TableAddress(schema="public", table="foo")
+    primary_keys = PrimaryKeyStore()
+    primary_keys[ta] = {"name": "id", "type": "INTEGER"}
+    column_types = ColumnTypeMapStore().add(
+        table=ta,
+        column="attributes",
+        type_=ColumnType.MAP,
+    )
+    return DMSTranslatorCrateDB(column_types=column_types, ignore_ddl=True)
 
 
 def test_decode_cdc_unknown_source(cdc):
@@ -237,6 +260,18 @@ def test_decode_cdc_sql_ddl_regular_drop(cdc):
         statement="DROP TABLE IF EXISTS public.foo;",
         parameters=None,
     )
+
+
+def test_decode_cdc_sql_without_ddl_regular_create(cdc_without_ddl):
+    with pytest.raises(SkipOperation) as ex:
+        cdc_without_ddl.to_sql(MSG_CONTROL_CREATE_TABLE)
+    assert ex.match("Ignoring DMS DDL event: create-table")
+
+
+def test_decode_cdc_sql_without_ddl_regular_drop(cdc_without_ddl):
+    with pytest.raises(SkipOperation) as ex:
+        cdc_without_ddl.to_sql(MSG_CONTROL_DROP_TABLE)
+    assert ex.match("Ignoring DMS DDL event: drop-table")
 
 
 def test_decode_cdc_sql_ddl_awsdms(cdc):

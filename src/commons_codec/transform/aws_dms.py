@@ -11,6 +11,7 @@ from commons_codec.model import (
     ColumnType,
     ColumnTypeMapStore,
     PrimaryKeyStore,
+    SkipOperation,
     SQLOperation,
     SQLParameterizedSetClause,
     SQLParameterizedWhereClause,
@@ -83,13 +84,16 @@ class DMSTranslatorCrateDBRecord:
         self.primary_keys: t.List[str] = self.container.primary_keys[self.address]
         self.column_types: t.Dict[str, ColumnType] = self.container.column_types[self.address]
 
-        pks = self.control.get("table-def", {}).get("primary-key", [])
-        for pk in pks:
-            if pk not in self.primary_keys:
-                self.primary_keys.append(pk)
+        if not self.container.ignore_ddl:
+            pks = self.control.get("table-def", {}).get("primary-key", [])
+            for pk in pks:
+                if pk not in self.primary_keys:
+                    self.primary_keys.append(pk)
 
     def to_sql(self) -> SQLOperation:
         if self.operation == "create-table":
+            if self.container.ignore_ddl:
+                raise SkipOperation("Ignoring DMS DDL event: create-table")
             return SQLOperation(
                 f"CREATE TABLE IF NOT EXISTS {self.address.fqn} ("
                 f"{self.PK_COLUMN} OBJECT(STRICT){self.pk_clause()}, "
@@ -98,6 +102,8 @@ class DMSTranslatorCrateDBRecord:
             )
 
         elif self.operation == "drop-table":
+            if self.container.ignore_ddl:
+                raise SkipOperation("Ignoring DMS DDL event: drop-table")
             # Remove cached schema information by restoring original so a future CREATE starts clean.
             self.container.primary_keys[self.address] = self.container.primary_keys_caller.get(self.address, [])
             self.container.column_types[self.address] = self.container.column_types_caller.get(self.address, {})
@@ -249,9 +255,11 @@ class DMSTranslatorCrateDB:
         self,
         primary_keys: PrimaryKeyStore = None,
         column_types: ColumnTypeMapStore = None,
+        ignore_ddl: bool = False,
     ):
         self.primary_keys = primary_keys or PrimaryKeyStore()
         self.column_types = column_types or ColumnTypeMapStore()
+        self.ignore_ddl = ignore_ddl
 
         # Store caller-provided schema information to restore this state on `DROP TABLE` operations.
         self.primary_keys_caller = copy.deepcopy(self.primary_keys)
