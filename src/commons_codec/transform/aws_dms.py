@@ -1,5 +1,6 @@
 # Copyright (c) 2021-2025, Crate.io Inc.
 # Distributed under the terms of the LGPLv3 license, see LICENSE.
+import abc
 import copy
 import logging
 import typing as t
@@ -8,6 +9,7 @@ import simplejson as json
 
 from commons_codec.exception import MessageFormatError, UnknownOperationError
 from commons_codec.model import (
+    ColumnMappingStrategy,
     ColumnType,
     ColumnTypeMapStore,
     PrimaryKeyStore,
@@ -22,24 +24,7 @@ from commons_codec.model import (
 logger = logging.getLogger(__name__)
 
 
-class DMSTranslatorCrateDBRecord:
-    """
-    Translate DMS full-load and cdc events into CrateDB SQL statements.
-    """
-
-    # Define the name of the column where primary key information will get materialized into.
-    # This column uses the `OBJECT(STRICT)` data type.
-    PK_COLUMN = "pk"
-
-    # Define the name of the column where CDC's record data will get materialized into.
-    # This column uses the `OBJECT(DYNAMIC)` data type.
-    TYPED_COLUMN = "data"
-
-    # Define the name of the column where untyped fields will get materialized into.
-    # This column uses the `OBJECT(IGNORED)` data type.
-    # TODO: Currently not used with DMS.
-    UNTYPED_COLUMN = "aux"
-
+class DMSTranslatorCrateDBRecordBase(abc.ABC):
     def __init__(
         self,
         event: t.Dict[str, t.Any],
@@ -92,73 +77,81 @@ class DMSTranslatorCrateDBRecord:
 
     def to_sql(self) -> SQLOperation:
         if self.operation == "create-table":
-            if self.container.ignore_ddl:
-                raise SkipOperation("Ignoring DMS DDL event: create-table")
-            return SQLOperation(
-                f"CREATE TABLE IF NOT EXISTS {self.address.fqn} ("
-                f"{self.PK_COLUMN} OBJECT(STRICT){self.pk_clause()}, "
-                f"{self.TYPED_COLUMN} OBJECT(DYNAMIC), "
-                f"{self.UNTYPED_COLUMN} OBJECT(IGNORED));"
-            )
+            return self.create_operation()
 
         elif self.operation == "drop-table":
-            if self.container.ignore_ddl:
-                raise SkipOperation("Ignoring DMS DDL event: drop-table")
-            # Remove cached schema information by restoring original so a future CREATE starts clean.
-            self.container.primary_keys[self.address] = self.container.primary_keys_caller.get(self.address, [])
-            self.container.column_types[self.address] = self.container.column_types_caller.get(self.address, {})
-            return SQLOperation(f"DROP TABLE IF EXISTS {self.address.fqn};")
+            return self.drop_operation()
 
         elif self.operation in ["load", "insert"]:
-            self.decode_data()
-            record = self.decode_record(self.data)
-            sql = (
-                f"INSERT INTO {self.address.fqn} ("
-                f"{self.PK_COLUMN}, "
-                f"{self.TYPED_COLUMN}, "
-                f"{self.UNTYPED_COLUMN}"
-                f") VALUES ("
-                f":pk, "
-                f":typed, "
-                f":untyped) "
-                f"ON CONFLICT DO NOTHING;"
-            )
-            parameters = record.to_dict()
+            return self.insert_operation()
 
         elif self.operation == "update":
-            self.decode_data()
-            set_clause = self.update_clause()
-            where_clause = self.keys_to_where()
-            sql = f"UPDATE {self.address.fqn} SET {set_clause.to_sql()} WHERE {where_clause.to_sql()};"
-            parameters = set_clause.values  # noqa: PD011
-            parameters.update(where_clause.values)
+            return self.update_operation()
 
         elif self.operation == "delete":
-            where_clause = self.keys_to_where()
-            sql = f"DELETE FROM {self.address.fqn} WHERE {where_clause.to_sql()};"
-            parameters = where_clause.values  # noqa: PD011
+            return self.delete_operation()
 
         else:
-            message = f"Unknown CDC event operation: {self.operation}"
+            message = f"DMS CDC event operation unknown: {self.operation}"
             logger.warning(message)
             raise UnknownOperationError(message, operation=self.operation, record=self.event)
 
+    @abc.abstractmethod
+    def create_operation(self) -> SQLOperation:
+        raise NotImplementedError("Must be implemented by subclass")
+
+    def drop_operation(self) -> SQLOperation:
+        if self.container.ignore_ddl:
+            raise SkipOperation("Ignoring DMS DDL event: drop-table")
+        # Remove cached schema information by restoring original so a future CREATE starts clean.
+        self.container.primary_keys[self.address] = self.container.primary_keys_caller.get(self.address, [])
+        self.container.column_types[self.address] = self.container.column_types_caller.get(self.address, {})
+        return SQLOperation(f"DROP TABLE IF EXISTS {self.address.fqn};")
+
+    @abc.abstractmethod
+    def insert_operation(self) -> SQLOperation:
+        raise NotImplementedError("Must be implemented by subclass")
+
+    def update_operation(self) -> SQLOperation:
+        self.decode_data()
+        set_clause = self.update_clause()
+        where_clause = self.keys_to_where()
+        sql = f"UPDATE {self.address.fqn} SET {set_clause.to_sql()} WHERE {where_clause.to_sql()};"
+        parameters = set_clause.values  # noqa: PD011
+        parameters.update(where_clause.values)
         return SQLOperation(sql, parameters)
 
-    def pk_clause(self) -> str:
+    def delete_operation(self) -> SQLOperation:
+        where_clause = self.keys_to_where()
+        sql = f"DELETE FROM {self.address.fqn} WHERE {where_clause.to_sql()};"
+        parameters = where_clause.values  # noqa: PD011
+        return SQLOperation(sql, parameters)
+
+    @abc.abstractmethod
+    def update_clause(self) -> SQLParameterizedSetClause:
+        raise NotImplementedError("Must be implemented by subclass")
+
+    @abc.abstractmethod
+    def keys_to_where(self) -> SQLParameterizedWhereClause:
+        raise NotImplementedError("Must be implemented by subclass")
+
+    def decode_data(self):
         """
-        Return primary key clause in string format.
+        Apply type translations to record, and serialize to JSON.
+
+        IN (top-level stripped):
+        "data": {"age": 30, "attributes": '{"foo": "bar"}', "id": 42, "name": "John"}
+
+        OUT:
+        {"age": 30, "attributes": {"foo": "bar"}, "id": 42, "name": "John"}
         """
-        if self.primary_keys:
-            columns = self.control.get("table-def", {}).get("columns", {})
-            pk_clauses = []
-            for pk_name in self.primary_keys:
-                col_meta = columns.get(pk_name) or {}
-                ltype = col_meta.get("type", "TEXT")
-                pk_clauses.append(f'"{pk_name}" {self.resolve_type(ltype)} PRIMARY KEY')
-            if pk_clauses:
-                return f" AS ({', '.join(pk_clauses)})"
-        return ""
+        for column_name, column_type in self.column_types.items():
+            if column_name in self.data:
+                value = self.data[column_name]
+                # DMS marshals JSON|JSONB to CLOB, aka. string. Apply a countermeasure.
+                if column_type is ColumnType.MAP and isinstance(value, str):
+                    value = json.loads(value)
+                self.data[column_name] = value
 
     @staticmethod
     def resolve_type(ltype: str) -> str:
@@ -182,6 +175,67 @@ class DMSTranslatorCrateDBRecord:
         }
         return type_map.get(ltype, "TEXT")
 
+
+class DMSTranslatorCrateDBRecordUniversal(DMSTranslatorCrateDBRecordBase):
+    """
+    Translate DMS full-load and cdc events into CrateDB SQL statements.
+    """
+
+    # Define the name of the column where primary key information will get materialized into.
+    # This column uses the `OBJECT(STRICT)` data type.
+    PK_COLUMN = "pk"
+
+    # Define the name of the column where CDC's record data will get materialized into.
+    # This column uses the `OBJECT(DYNAMIC)` data type.
+    TYPED_COLUMN = "data"
+
+    # Define the name of the column where untyped fields will get materialized into.
+    # This column uses the `OBJECT(IGNORED)` data type.
+    # TODO: Currently not used with DMS.
+    UNTYPED_COLUMN = "aux"
+
+    def create_operation(self) -> SQLOperation:
+        if self.container.ignore_ddl:
+            raise SkipOperation("Ignoring DMS DDL event: create-table")
+        return SQLOperation(
+            f"CREATE TABLE IF NOT EXISTS {self.address.fqn} ("
+            f"{self.PK_COLUMN} OBJECT(STRICT){self.pk_clause()}, "
+            f"{self.TYPED_COLUMN} OBJECT(DYNAMIC), "
+            f"{self.UNTYPED_COLUMN} OBJECT(IGNORED));"
+        )
+
+    def insert_operation(self) -> SQLOperation:
+        self.decode_data()
+        record = self.decode_record(self.data)
+        sql = (
+            f"INSERT INTO {self.address.fqn} ("
+            f"{self.PK_COLUMN}, "
+            f"{self.TYPED_COLUMN}, "
+            f"{self.UNTYPED_COLUMN}"
+            f") VALUES ("
+            f":pk, "
+            f":typed, "
+            f":untyped) "
+            f"ON CONFLICT DO NOTHING;"
+        )
+        parameters = record.to_dict()
+        return SQLOperation(sql, parameters)
+
+    def pk_clause(self) -> str:
+        """
+        Return primary key clause in string format.
+        """
+        if self.primary_keys:
+            columns = self.control.get("table-def", {}).get("columns", {})
+            pk_clauses = []
+            for pk_name in self.primary_keys:
+                col_meta = columns.get(pk_name) or {}
+                ltype = col_meta.get("type", "TEXT")
+                pk_clauses.append(f'"{pk_name}" {self.resolve_type(ltype)} PRIMARY KEY')
+            if pk_clauses:
+                return f" AS ({', '.join(pk_clauses)})"
+        return ""
+
     def update_clause(self) -> SQLParameterizedSetClause:
         """
         Serializes an image to a comma-separated list of column/values pairs
@@ -201,24 +255,6 @@ class DMSTranslatorCrateDBRecord:
                 continue
             clause.add(lval=f"{self.TYPED_COLUMN}['{column}']", value=value, name=column)
         return clause
-
-    def decode_data(self):
-        """
-        Apply type translations to record, and serialize to JSON.
-
-        IN (top-level stripped):
-        "data": {"age": 30, "attributes": '{"foo": "bar"}', "id": 42, "name": "John"}
-
-        OUT:
-        {"age": 30, "attributes": {"foo": "bar"}, "id": 42, "name": "John"}
-        """
-        for column_name, column_type in self.column_types.items():
-            if column_name in self.data:
-                value = self.data[column_name]
-                # DMS marshals JSON|JSONB to CLOB, aka. string. Apply a countermeasure.
-                if column_type is ColumnType.MAP and isinstance(value, str):
-                    value = json.loads(value)
-                self.data[column_name] = value
 
     def decode_record(self, item: t.Dict[str, t.Any], key_names: t.Union[t.List[str], None] = None) -> UniversalRecord:
         """
@@ -240,6 +276,76 @@ class DMSTranslatorCrateDBRecord:
         return clause
 
 
+class DMSTranslatorCrateDBRecordDirect(DMSTranslatorCrateDBRecordBase):
+    def create_operation(self) -> SQLOperation:
+        if self.container.ignore_ddl:
+            raise SkipOperation("Ignoring DMS DDL event: create-table")
+        return SQLOperation(f"CREATE TABLE IF NOT EXISTS {self.address.fqn} ({', '.join(self.columns_ddl())});")
+
+    def insert_operation(self) -> SQLOperation:
+        self.decode_data()
+        insert_clause = self.insert_clause()
+        sql = (
+            f"INSERT INTO {self.address.fqn} "
+            f"({insert_clause.render_lvals()}) VALUES ({insert_clause.render_rvals()}) ON CONFLICT DO NOTHING;"
+        )
+        parameters = self.data
+        return SQLOperation(sql, parameters)
+
+    def columns_ddl(self) -> t.List[str]:
+        """
+        Return primary key clause in string format.
+        """
+        items = []
+        columns = self.control.get("table-def", {}).get("columns", {})
+        for column_name, col_meta in columns.items():
+            ltype = col_meta.get("type", "TEXT")
+            item = f'"{column_name}" {self.resolve_type(ltype)}'
+            if column_name in self.primary_keys:
+                item += " PRIMARY KEY"
+            items.append(item)
+        return items
+
+    def insert_clause(self) -> SQLParameterizedSetClause:
+        clause = SQLParameterizedSetClause()
+        for column, value in self.data.items():
+            clause.add(lval=column, value=value, name=column)
+        return clause
+
+    def update_clause(self) -> SQLParameterizedSetClause:
+        """
+        Serializes an image to a comma-separated list of column/values pairs
+        that can be used in the `SET` clause of an `UPDATE` statement.
+        Primary key columns are skipped, since they cannot be updated.
+
+        IN
+        {'age': 33, 'attributes': '{"foo": "bar"}', 'id': 42, 'name': 'John'}
+
+        OUT
+        data['age'] = '33', data['attributes'] = '{"foo": "bar"}', data['name'] = 'John'
+        """
+        clause = SQLParameterizedSetClause()
+        for column, value in self.data.items():
+            # Skip primary key columns, they cannot be updated.
+            if column in self.primary_keys:
+                continue
+            clause.add(lval=column, value=value, name=column)
+        return clause
+
+    def keys_to_where(self) -> SQLParameterizedWhereClause:
+        """
+        Produce an SQL WHERE clause based on primary key definition and current record's data.
+        """
+        if not self.primary_keys:
+            raise ValueError("Unable to invoke DML operation without primary key information")
+        clause = SQLParameterizedWhereClause()
+        for key_name in self.primary_keys:
+            key_value = self.data.get(key_name)
+            if key_value is not None:
+                clause.add(lval=key_name, value=key_value, name=key_name)
+        return clause
+
+
 class DMSTranslatorCrateDB:
     """
     Translate AWS DMS event messages into CrateDB SQL statements that materialize them again.
@@ -255,10 +361,12 @@ class DMSTranslatorCrateDB:
         self,
         primary_keys: PrimaryKeyStore = None,
         column_types: ColumnTypeMapStore = None,
+        mapping_strategy: ColumnMappingStrategy = None,
         ignore_ddl: bool = False,
     ):
         self.primary_keys = primary_keys or PrimaryKeyStore()
         self.column_types = column_types or ColumnTypeMapStore()
+        self.column_mapping = mapping_strategy or ColumnMappingStrategy.UNIVERSAL
         self.ignore_ddl = ignore_ddl
 
         # Store caller-provided schema information to restore this state on `DROP TABLE` operations.
@@ -269,5 +377,11 @@ class DMSTranslatorCrateDB:
         """
         Produce INSERT|UPDATE|DELETE SQL statement from load|insert|update|delete CDC event record.
         """
-        record_decoded = DMSTranslatorCrateDBRecord(event=record, container=self)
+        record_decoded: DMSTranslatorCrateDBRecordBase
+        if self.column_mapping is ColumnMappingStrategy.DIRECT:
+            record_decoded = DMSTranslatorCrateDBRecordDirect(event=record, container=self)
+        elif self.column_mapping is ColumnMappingStrategy.UNIVERSAL:
+            record_decoded = DMSTranslatorCrateDBRecordUniversal(event=record, container=self)
+        else:
+            raise TypeError(f"Column mapping strategy unknown: {self.column_mapping}")
         return record_decoded.to_sql()

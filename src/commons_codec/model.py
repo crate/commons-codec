@@ -1,7 +1,7 @@
 import json
 import sys
 import typing as t
-from enum import auto
+from enum import Enum, auto
 from functools import cached_property
 
 import toolz
@@ -118,6 +118,12 @@ class SQLParameterizedClause:
         """
         return delimiter.join([f"{lval}={rval}" for lval, rval in zip(self.lvals, self.rvals)])
 
+    def render_lvals(self):
+        return ", ".join([f'"{item}"' for item in self.lvals])
+
+    def render_rvals(self):
+        return ", ".join(self.rvals)
+
 
 @define
 class SQLParameterizedSetClause(SQLParameterizedClause):
@@ -166,3 +172,8 @@ class UniversalRecord:
         record = toolz.dissoc(record, *pk.keys())
         record = toolz.dissoc(record, *untyped.keys())
         return cls(pk=pk, typed=record, untyped=untyped)
+
+
+class ColumnMappingStrategy(Enum):
+    DIRECT = "DIRECT"
+    UNIVERSAL = "UNIVERSAL"
