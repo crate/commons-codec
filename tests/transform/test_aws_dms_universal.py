@@ -194,7 +194,7 @@ def cdc_universal():
     column_types = ColumnTypeMapStore().add(
         table=ta_foo,
         column="attributes",
-        type_=ColumnType.MAP,
+        type_=ColumnType.OBJECT,
     )
     mapping_strategy = {
         ta_foo: ColumnMappingStrategy.UNIVERSAL,
@@ -215,7 +215,7 @@ def cdc_universal_without_ddl():
     column_types = ColumnTypeMapStore().add(
         table=ta_foo,
         column="attributes",
-        type_=ColumnType.MAP,
+        type_=ColumnType.OBJECT,
     )
     mapping_strategy = {
         ta_foo: ColumnMappingStrategy.UNIVERSAL,

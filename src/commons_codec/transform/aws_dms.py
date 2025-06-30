@@ -219,7 +219,7 @@ class DMSTranslatorCrateDBRecordBase(abc.ABC):
             if column_name in data:
                 value = data[column_name]
                 # DMS marshals JSON|JSONB to CLOB, aka. string. Apply a countermeasure.
-                if column_type is ColumnType.MAP and isinstance(value, str):
+                if (column_type is ColumnType.MAP or column_type is ColumnType.OBJECT) and isinstance(value, str):
                     value = json.loads(value)
                 data[column_name] = value
 

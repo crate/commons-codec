@@ -36,6 +36,22 @@ def test_column_type_map_store_unserialize_data():
     )
 
 
+def test_column_type_object_store_serialize():
+    column_types = ColumnTypeMapStore().add(
+        table=TableAddress(schema="public", table="foo"),
+        column="attributes",
+        type_=ColumnType.OBJECT,
+    )
+    assert column_types.to_dict() == {"public:foo:attributes": "object"}
+    assert column_types.to_json() == '{"public:foo:attributes": "object"}'
+
+
+def test_column_type_object_store_unserialize_data():
+    assert ColumnTypeMapStore.from_json('{"public:foo:attributes": "object"}') == ColumnTypeMapStore(
+        {TableAddress(schema="public", table="foo"): {"attributes": ColumnType.OBJECT}}
+    )
+
+
 def test_column_type_map_store_unserialize_empty():
     assert ColumnTypeMapStore.from_json("") is None
     assert ColumnTypeMapStore.from_json(None) is None
