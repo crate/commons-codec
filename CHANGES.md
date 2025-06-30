@@ -3,6 +3,7 @@
 ## Unreleased
 - DMS: Added option `ignore_ddl` to ignore DDL events
 - DMS: Added direct column mapping
+- DMS: Started using direct column mapping by default
 
 ## 2025/06/23 v0.0.23
 - Dependencies: Migrated from `zyp` to `tikray`. It's effectively the

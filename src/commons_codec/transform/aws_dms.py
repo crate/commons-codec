@@ -88,15 +88,18 @@ class DMSTranslatorCrateDBRecordFactory:
     Entrypoint factory for creating variants of `DMSTranslatorCrateDBRecord`.
     """
 
-    @staticmethod
+    DEFAULT_MAPPING_STRATEGY = ColumnMappingStrategy.DIRECT
+
+    @classmethod
     def create(
+        cls,
         event: t.Dict[str, t.Any],
         container: "DMSTranslatorCrateDB",
     ) -> "DMSTranslatorCrateDBRecordBase":
         bucket = DMSBucket(event=event)
-        mapping_strategy = ColumnMappingStrategy.UNIVERSAL
+        mapping_strategy = cls.DEFAULT_MAPPING_STRATEGY
         if bucket.address:
-            val = container.mapping_strategy.get(bucket.address, "universal")
+            val = container.mapping_strategy.get(bucket.address, cls.DEFAULT_MAPPING_STRATEGY.value)
             if isinstance(val, str):
                 mapping_strategy = ColumnMappingStrategy(val.upper())
             else:

@@ -189,13 +189,17 @@ def cdc_universal():
     """
     Provide a regular translator instance.
     """
-    ta = TableAddress(schema="public", table="foo")
+    ta_dms = TableAddress(schema="dms", table="awsdms_apply_exceptions")
+    ta_foo = TableAddress(schema="public", table="foo")
     column_types = ColumnTypeMapStore().add(
-        table=ta,
+        table=ta_foo,
         column="attributes",
         type_=ColumnType.MAP,
     )
-    mapping_strategy = {ta: ColumnMappingStrategy.UNIVERSAL}
+    mapping_strategy = {
+        ta_foo: ColumnMappingStrategy.UNIVERSAL,
+        ta_dms: ColumnMappingStrategy.UNIVERSAL,
+    }
     return DMSTranslatorCrateDB(column_types=column_types, mapping_strategy=mapping_strategy)
 
 
@@ -204,16 +208,21 @@ def cdc_universal_without_ddl():
     """
     Provide a translator instance that ignores DDL events.
     """
-    ta = TableAddress(schema="public", table="foo")
+    ta_dms = TableAddress(schema="dms", table="awsdms_apply_exceptions")
+    ta_foo = TableAddress(schema="public", table="foo")
     primary_keys = PrimaryKeyStore()
-    primary_keys[ta] = {"name": "id", "type": "INTEGER"}
+    primary_keys[ta_foo] = {"name": "id", "type": "INTEGER"}
     column_types = ColumnTypeMapStore().add(
-        table=ta,
+        table=ta_foo,
         column="attributes",
         type_=ColumnType.MAP,
     )
-    ignore_ddl = {ta: True}
-    return DMSTranslatorCrateDB(column_types=column_types, ignore_ddl=ignore_ddl)
+    mapping_strategy = {
+        ta_foo: ColumnMappingStrategy.UNIVERSAL,
+        ta_dms: ColumnMappingStrategy.UNIVERSAL,
+    }
+    ignore_ddl = {ta_foo: True}
+    return DMSTranslatorCrateDB(column_types=column_types, mapping_strategy=mapping_strategy, ignore_ddl=ignore_ddl)
 
 
 def test_unknown_strategy(cdc_universal):
