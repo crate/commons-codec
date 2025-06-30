@@ -31,6 +31,7 @@ class TableAddress:
 
 class ColumnType(StrEnum):
     MAP = auto()
+    OBJECT = auto()
 
 
 @define(frozen=True)

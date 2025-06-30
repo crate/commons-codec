@@ -38,7 +38,7 @@ def cdc_direct():
     column_types = ColumnTypeMapStore().add(
         table=ta_foo,
         column="attributes",
-        type_=ColumnType.MAP,
+        type_=ColumnType.OBJECT,
     )
     mapping_strategy = {
         ta_foo: ColumnMappingStrategy.DIRECT,
@@ -58,7 +58,7 @@ def cdc_direct_without_ddl():
     column_types = ColumnTypeMapStore().add(
         table=ta,
         column="attributes",
-        type_=ColumnType.MAP,
+        type_=ColumnType.OBJECT,
     )
     mapping_strategy = {ta: ColumnMappingStrategy.DIRECT}
     ignore_ddl = {ta: True}
