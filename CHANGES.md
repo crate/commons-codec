@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## 2025/07/01 v0.0.24
 - DMS: Added option `ignore_ddl` to ignore DDL events
 - DMS: Added direct column mapping
 - DMS: Started using direct column mapping by default
