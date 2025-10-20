@@ -112,7 +112,7 @@ dependencies = [
   "python-dateutil<3",
   "simplejson<4",
   "sqlalchemy-cratedb>=0.39.0",
-  "toolz<1.1",
+  "toolz<1.2",
 ]
 optional-dependencies.all = [
   "commons-codec[mongodb,tikray]",
