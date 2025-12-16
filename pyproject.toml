@@ -128,6 +128,7 @@ optional-dependencies.develop = [
 optional-dependencies.doc = [
   "furo==2025.9.25",               # Check visited link style on newer versions!
   "myst-parser[linkify]>=0.18,<5",
+  "sphinx<8",
   "sphinx-autobuild==2021.3.14",   # Newer versions stopped "watching" appropriately?
   "sphinx-copybutton",
   "sphinx-design-elements<1",
