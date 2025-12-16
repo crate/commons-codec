@@ -22,9 +22,9 @@
 | [Kotori]
 | [LorryStream]
 
-```{include} readme.md
+:::{include} readme.md
 :start-line: 11
-```
+:::
 
 
 ```{toctree}
@@ -33,7 +33,7 @@
 :hidden:
 
 cdc/index
-decode
+telemetry
 transform
 ```
 

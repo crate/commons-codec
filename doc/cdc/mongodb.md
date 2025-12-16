@@ -1,44 +1,53 @@
 (mongodb-cdc)=
 # Relay MongoDB Change Stream into CrateDB
 
-## About
-[mongodb_cdc_cratedb.py] demonstrates a basic example program to relay event
-records from [MongoDB Change Streams] into [CrateDB].
+:::{rubric} What's inside
+:::
+
+Documentation and [example program][mongodb_cdc_cratedb.py] how to relay data
+from MongoDB into [CrateDB], using [MongoDB Change Streams].
 
 > Change streams allow applications to access real-time data changes without the prior
 > complexity and risk of manually tailing the oplog. Applications can use change streams
 > to subscribe to all data changes on a single collection, a database, or an entire
 > deployment, and immediately react to them.
 >
-> - https://www.mongodb.com/docs/manual/changeStreams/
-> - https://www.mongodb.com/developer/languages/python/python-change-streams/
+> - [MongoDB Change Streams]
+> - [Monitor Data with Change Streams]
 
+:::{note}
+`commons-codec` includes `MongoDBFullLoadTranslator` and `MongoDBCDCTranslator`.
+This document and example program is exclusively about the latter.
+:::
 
-## Services
+## Prerequisites
 
-### CrateDB
-Start CrateDB.
+Start services CrateDB and MongoDB.
+
+:::{rubric} Start CrateDB
+:::
 ```shell
-docker run --rm -it --name=cratedb --publish=4200:4200 --env=CRATE_HEAP_SIZE=2g \
-    crate:5.7 -Cdiscovery.type=single-node
+docker run --rm --name=cratedb --publish=4200:4200 --env=CRATE_HEAP_SIZE=2g \
+    docker.io/crate:latest '-Cdiscovery.type=single-node'
 ```
 
-### MongoDB
-Start MongoDB.
+:::{rubric} Start MongoDB
+:::
 Please note that change streams are only available for replica sets and
 sharded clusters, so let's define a replica set by using the
 `--replSet rs-testdrive` option when starting the MongoDB server.
 ```shell
-docker run -it --rm --name=mongodb --publish=27017:27017 \
-    mongo:7 mongod --replSet rs-testdrive
+docker run --rm --name=mongodb --publish=27017:27017 \
+    docker.io/mongo:8 mongod --replSet rs-testdrive
 ```
 
 Now, initialize the replica set, by using the `mongosh` command to invoke
 the `rs.initiate()` operation.
 ```shell
 export MONGODB_URL="mongodb://localhost/"
-docker run -i --rm --network=host mongo:7 mongosh ${MONGODB_URL} <<EOF
+docker run -i --rm --network=host docker.io/mongo:8 mongosh ${MONGODB_URL} <<EOF
 
+disableTelemetry()
 config = {
     _id: "rs-testdrive",
     members: [{ _id : 0, host : "localhost:27017"}]
@@ -100,3 +109,4 @@ time, but, again, it has not been correctly initialized.
 [CrateDB]: https://github.com/crate/crate
 [mongodb_cdc_cratedb.py]: https://github.com/daq-tools/commons-codec/raw/main/examples/mongodb_cdc_cratedb.py
 [MongoDB Change Streams]: https://www.mongodb.com/docs/manual/changeStreams/
+[Monitor Data with Change Streams]: https://www.mongodb.com/developer/languages/python/python-change-streams/

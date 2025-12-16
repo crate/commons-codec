@@ -3,26 +3,21 @@
 `commons-codec` includes CDC -> SQL transformer components for AWS DMS,
 DynamoDB, and MongoDB.
 
-## DynamoDB
-- Blog: [Replicating CDC Events from DynamoDB to CrateDB]
-- Documentation: [DynamoDB CDC Relay for CrateDB]
+:DynamoDB:
+  - Blog: [Replicating CDC Events from DynamoDB to CrateDB]
+  - Documentation: [DynamoDB CDC Relay for CrateDB]
 
-## MongoDB
-- Introduction: [](project:#mongodb-cdc)
-- Documentation: [MongoDB CDC Relay for CrateDB]
+:MongoDB:
+  - Usage guide: [](project:#mongodb-cdc)
+  - Documentation: [MongoDB CDC Relay for CrateDB]
 
 
 ```{toctree}
 :hidden:
 
-mongodb
+MongoDB <mongodb>
 ```
 
-
-:::{note}
-Please note relevant components are still in their infancy (beta),
-and need further curation and improvements.
-:::
 
 
 ## Prior Art

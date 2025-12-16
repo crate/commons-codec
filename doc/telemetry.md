@@ -1,20 +1,24 @@
-# Decoder Collection
+# Telemetry decoders
 
 `commons-codec` includes telemetry data decoders for individual popular sensor
 appliances.
 
-## Sensor.Community
+:Sensor.Community:
 
-- Air quality measurement appliances of [Sensor.Community].
-
+  Air quality measurement appliances of [Sensor.Community].
+  <br>
   Example: [Kotori Sensor.Community integration]
 
-- [Tasmota open source firmware for ESP devices].
+:Tasmota:
 
+  [Tasmota open source firmware for ESP devices].
+  <br>
   Example: [Kotori Tasmota integration]
 
-- Devices connected to [The Things Stack (TTS)] / [The Things Network (TTN)].
+:TTN:
 
+  Devices connected to [The Things Stack (TTS)] / [The Things Network (TTN)].
+  <br>
   Example: [Kotori TTN/TTS integration]
 
 
