@@ -149,7 +149,7 @@ optional-dependencies.test = [
   "pytest-mock<4",
 ]
 optional-dependencies.tikray = [
-  "tikray>=0.2.2,<0.3",
+  "tikray>=0.2.2,<0.4",
 ]
 
 urls.Changelog = "https://commons-codec.readthedocs.io/changes.html"
