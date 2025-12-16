@@ -1,8 +1,8 @@
-# Transform
+# Transformations
 
-Data transformations are now delegated to [tikray], an external library that
-implements the same rule-based pipeline formerly shipped as **zyp**.  
-See the Tikray documentation for usage examples and migration tips.
+Data transformations are delegated to Tikray, an external library that
+implements a miniature yet elegant rule-based pipeline system.
+See the [Tikray documentation] for usage examples and migration tips.
 
 
-[tikray]: https://tikray.readthedocs.io/
+[Tikray documentation]: https://tikray.readthedocs.io/
