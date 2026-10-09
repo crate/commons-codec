@@ -122,15 +122,15 @@ def test_to_sql_cratedb(caplog, cratedb, dynamodb_full_translator_foo):
     operation = translator.to_sql(RECORD_IN)
 
     # Insert into CrateDB.
-    cratedb.database.run_sql(translator.sql_ddl)
-    cratedb.database.run_sql(operation.statement, operation.parameters)
+    cratedb.run_sql(translator.sql_ddl)
+    cratedb.run_sql(operation.statement, operation.parameters)
 
     # Verify data in target database.
-    assert cratedb.database.table_exists("from.dynamodb") is True
-    assert cratedb.database.refresh_table("from.dynamodb") is True
-    assert cratedb.database.count_records("from.dynamodb") == 1
+    assert cratedb.table_exists("from.dynamodb") is True
+    assert cratedb.refresh_table("from.dynamodb") is True
+    assert cratedb.count_records("from.dynamodb") == 1
 
-    results = cratedb.database.run_sql('SELECT * FROM "from".dynamodb;', records=True)  # noqa: S608
+    results = cratedb.run_sql('SELECT * FROM "from".dynamodb;', records=True)  # noqa: S608
     assert results[0]["pk"] == RECORD_OUT_PK
     assert results[0]["data"] == RECORD_OUT_DATA
     assert results[0]["aux"] == RECORD_OUT_AUX

@@ -356,7 +356,7 @@ def test_to_sql_cratedb(caplog, cratedb, dynamodb_full_translator_foo):
     translator = DynamoDBFullLoadTranslator(
         table_name="from.dynamodb", primary_key_schema=dynamodb_full_translator_foo.primary_key_schema
     )
-    cratedb.database.run_sql(translator.sql_ddl)
+    cratedb.run_sql(translator.sql_ddl)
 
     # Compute CrateDB operation (SQL+parameters) from DynamoDB record.
     translator = DynamoDBCDCTranslator(table_name="from.dynamodb")
@@ -365,15 +365,15 @@ def test_to_sql_cratedb(caplog, cratedb, dynamodb_full_translator_foo):
     # Insert into CrateDB. Running the INSERT operation twice proves it
     # does not raise any `DuplicateKeyException`, because CDC INSERT
     # statements use `ON CONFLICT DO NOTHING`.
-    cratedb.database.run_sql(operation.statement, operation.parameters)
-    cratedb.database.run_sql(operation.statement, operation.parameters)
+    cratedb.run_sql(operation.statement, operation.parameters)
+    cratedb.run_sql(operation.statement, operation.parameters)
 
     # Verify data in target database.
-    assert cratedb.database.table_exists("from.dynamodb") is True
-    assert cratedb.database.refresh_table("from.dynamodb") is True
-    assert cratedb.database.count_records("from.dynamodb") == 1
+    assert cratedb.table_exists("from.dynamodb") is True
+    assert cratedb.refresh_table("from.dynamodb") is True
+    assert cratedb.count_records("from.dynamodb") == 1
 
-    results = cratedb.database.run_sql('SELECT * FROM "from".dynamodb;', records=True)  # noqa: S608
+    results = cratedb.run_sql('SELECT * FROM "from".dynamodb;', records=True)  # noqa: S608
     assert results[0]["pk"]["id"] == MSG_INSERT_NESTED["dynamodb"]["NewImage"]["id"]["S"]
     assert results[0]["data"]["meta"]["timestamp"] == "2024-07-12T01:17:42"
     assert results[0]["aux"] == {}

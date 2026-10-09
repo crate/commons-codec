@@ -140,10 +140,10 @@ optional-dependencies.release = [
   "twine<7",
 ]
 optional-dependencies.test = [
-  "cratedb-toolkit[testing]",
   "pytest<9",
   "pytest-cov<8",
   "pytest-mock<4",
+  "testcontainers[cratedb]>=4.15,<5",
 ]
 optional-dependencies.tikray = [
   "tikray>=0.2.2,<0.4",

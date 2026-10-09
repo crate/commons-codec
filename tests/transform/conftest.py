@@ -1,7 +1,10 @@
+import os
+
 import pytest
 
 from commons_codec.transform.dynamodb import DynamoDBCDCTranslator, DynamoDBFullLoadTranslator
 from commons_codec.transform.dynamodb_model import PrimaryKeySchema
+from tests.cratedb import CrateDBTestAdapter
 
 RESET_TABLES = [
     "from.dynamodb",
@@ -10,14 +13,12 @@ RESET_TABLES = [
 ]
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def cratedb_custom_service():
     """
     Provide a CrateDB service instance to the test suite.
     """
-    from cratedb_toolkit.testing.testcontainers.cratedb import CrateDBTestAdapter
-
-    db = CrateDBTestAdapter(crate_version="nightly")
+    db = CrateDBTestAdapter(crate_version=os.environ.get("CRATEDB_VERSION", "nightly"))
     db.start()
     yield db
     db.stop()
