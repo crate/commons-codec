@@ -23,7 +23,7 @@ def test_normalize_list_of_objects(caplog, cratedb):
 
     record_out = {
         "_list_float_int": [{"abc": 42.42}, {"abc": 42.0}],
-        "_list_float_none": [{"id": 1, "abc": 42.42}, {"id": 2}],
+        "_list_float_none": [{"id": 1, "abc": 42.42}, {"id": 2, "abc": None}],
         "_list_int_str": [{"abc": "123"}, {"abc": "123"}],
     }
 

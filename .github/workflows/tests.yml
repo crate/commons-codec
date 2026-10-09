@@ -57,7 +57,7 @@ jobs:
           pip install "setuptools>=64" --upgrade
 
           # Install package in editable mode.
-          pip install --use-pep517 --prefer-binary --editable=.[develop,test]
+          pip install --use-pep517 --prefer-binary --editable=.[develop,test,tikray]
 
       - name: Set timezone
         uses: szenius/set-timezone@v2.0
