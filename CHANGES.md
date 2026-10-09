@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Dropped support for Python 3.8 and 3.9
 
 ## 2025/07/01 v0.0.24
 - DMS: Added option `ignore_ddl` to ignore DDL events
