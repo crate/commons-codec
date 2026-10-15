@@ -11,8 +11,13 @@ pip install --editable='.[all,develop,doc,test]'
 
 Invoke software tests.
 ```
-export TC_KEEPALIVE=true
 poe check
+```
+
+Run the tests against a CrateDB version other than `nightly`.
+They need CrateDB 6.0.3 or later, or 5.10.13 or later on the 5.10 line.
+```shell
+CRATEDB_VERSION=6.4.5 poe test
 ```
 
 Format code.

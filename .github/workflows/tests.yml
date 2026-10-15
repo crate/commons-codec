@@ -24,8 +24,6 @@ jobs:
       matrix:
         os: ['ubuntu-latest']
         python-version: [
-          '3.8',
-          '3.9',
           '3.10',
           '3.11',
           '3.12',
@@ -59,7 +57,7 @@ jobs:
           pip install "setuptools>=64" --upgrade
 
           # Install package in editable mode.
-          pip install --use-pep517 --prefer-binary --editable=.[develop,test]
+          pip install --use-pep517 --prefer-binary --editable=.[develop,test,tikray]
 
       - name: Set timezone
         uses: szenius/set-timezone@v2.0
@@ -96,8 +94,6 @@ jobs:
       matrix:
         os: ['ubuntu-latest']
         python-version: [
-          '3.8',
-          '3.9',
           '3.10',
           '3.11',
           '3.12',
@@ -159,7 +155,6 @@ jobs:
       matrix:
         os: ['ubuntu-latest']
         python-version: [
-          '3.9',
           '3.10',
           '3.11',
           '3.12',

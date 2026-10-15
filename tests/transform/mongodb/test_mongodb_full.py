@@ -84,13 +84,13 @@ def test_to_sql_cratedb(caplog, cratedb, data_in, data_out, kind):
     operation = translator.to_sql(deepcopy(data_in))
 
     # Insert into CrateDB.
-    cratedb.database.run_sql(translator.sql_ddl)
-    cratedb.database.run_sql(operation.statement, operation.parameters)
+    cratedb.run_sql(translator.sql_ddl)
+    cratedb.run_sql(operation.statement, operation.parameters)
 
     # Verify data in target database.
-    assert cratedb.database.table_exists("from.mongodb") is True
-    assert cratedb.database.refresh_table("from.mongodb") is True
-    assert cratedb.database.count_records("from.mongodb") == 1
+    assert cratedb.table_exists("from.mongodb") is True
+    assert cratedb.refresh_table("from.mongodb") is True
+    assert cratedb.count_records("from.mongodb") == 1
 
-    results = cratedb.database.run_sql('SELECT * FROM "from".mongodb;', records=True)  # noqa: S608
+    results = cratedb.run_sql('SELECT * FROM "from".mongodb;', records=True)  # noqa: S608
     assert results[0]["data"] == data_out

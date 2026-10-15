@@ -23,7 +23,7 @@ def test_normalize_list_of_objects(caplog, cratedb):
 
     record_out = {
         "_list_float_int": [{"abc": 42.42}, {"abc": 42.0}],
-        "_list_float_none": [{"id": 1, "abc": 42.42}, {"id": 2}],
+        "_list_float_none": [{"id": 1, "abc": 42.42}, {"id": 2, "abc": None}],
         "_list_int_str": [{"abc": "123"}, {"abc": "123"}],
     }
 
@@ -36,11 +36,11 @@ def test_normalize_list_of_objects(caplog, cratedb):
     Treatment(normalize_complex_lists=True).apply(parameters)
 
     # Insert into CrateDB.
-    cratedb.database.run_sql(operation_ddl.statement)
-    cratedb.database.run_sql(operation_dml.statement, parameters)
+    cratedb.run_sql(operation_ddl.statement)
+    cratedb.run_sql(operation_dml.statement, parameters)
 
     # Verify data in target database.
-    assert cratedb.database.refresh_table("from.generic") is True
+    assert cratedb.refresh_table("from.generic") is True
 
-    results = cratedb.database.run_sql('SELECT * FROM "from".generic;', records=True)  # noqa: S608
+    results = cratedb.run_sql('SELECT * FROM "from".generic;', records=True)  # noqa: S608
     assert results[0]["data"] == record_out
